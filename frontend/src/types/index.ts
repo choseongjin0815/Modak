@@ -58,6 +58,20 @@ export interface FileInfo {
   content_type: string
 }
 
+export interface ModeratedCategory {
+  id: number
+  slug: string
+  name: string
+  group: string | null
+}
+
+export interface ModeratorBanInfo {
+  banned_user_id: string
+  banned_username: string
+  expires_at: string | null
+  created_at: string
+}
+
 export interface Post {
   id: string
   title: string
@@ -73,6 +87,9 @@ export interface Post {
   updated_at: string
   author: string
   author_points: number
+  author_role: string
+  author_is_mod: boolean
+  viewer_is_mod: boolean
   files: FileInfo[]
   comment_count?: number
   my_vote: 'up' | 'down' | null
@@ -92,6 +109,8 @@ export interface PostListItem {
   created_at: string
   author: string
   author_points: number
+  author_role: string
+  author_is_mod: boolean
   comment_count: number
 }
 
@@ -113,6 +132,8 @@ export interface Comment {
   updated_at: string
   author: string
   author_points: number
+  author_role: string
+  author_is_mod: boolean
   up_votes: number
   down_votes: number
   my_vote: 'up' | 'down' | null

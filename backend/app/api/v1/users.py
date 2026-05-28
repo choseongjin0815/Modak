@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.security.dependencies import get_current_active_user
 from app.security.password import verify_password
 from app.models.user import User
+from app.repository.category_moderator_repository import CategoryModeratorRepository, get_category_mod_repo
 from app.repository.user_repository import UserRepository, get_user_repo
 from app.schemas.user import UserResponse, UserUpdate
 
@@ -71,3 +72,15 @@ async def get_my_posts(
         for p in posts
     ]
     return {"items": items, "total": total, "page": page, "size": size, "pages": pages}
+
+
+@router.get("/me/moderated-categories")
+async def get_my_moderated_categories(
+    current_user: User = Depends(get_current_active_user),
+    cat_mod_repo: CategoryModeratorRepository = Depends(get_category_mod_repo),
+):
+    categories = await cat_mod_repo.get_categories_for_user(current_user.id)
+    return [
+        {"id": c.id, "slug": c.slug, "name": c.name, "group": c.group}
+        for c in categories
+    ]

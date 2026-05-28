@@ -24,6 +24,8 @@ class CommentResponse(CommentBase):
     updated_at: datetime
     author: str
     author_points: int = 0
+    author_role: str = "USER"
+    author_is_mod: bool = False
     up_votes: int = 0
     down_votes: int = 0
     my_vote: str | None = None

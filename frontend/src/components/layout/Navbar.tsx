@@ -33,15 +33,24 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  useEffect(() => {
-    setMounted(true)
+  const syncAuth = () => {
     const auth = isAuthenticated()
     setAuthenticated(auth)
     if (auth) {
       const user = getUser()
       setUsername((user?.username as string) ?? (user?.sub as string) ?? null)
       setIsAdmin(checkIsAdmin())
+    } else {
+      setUsername(null)
+      setIsAdmin(false)
     }
+  }
+
+  useEffect(() => {
+    setMounted(true)
+    syncAuth()
+    window.addEventListener('auth-change', syncAuth)
+    return () => window.removeEventListener('auth-change', syncAuth)
   }, [])
 
   const handleLogout = () => {
@@ -110,7 +119,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop right */}
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
             {mounted && authenticated ? (
               <>
                 <button
@@ -132,8 +141,8 @@ export default function Navbar() {
                   <span className="font-medium max-w-[100px] truncate">{username}</span>
                 </Link>
                 {isAdmin && (
-                  <Link href="/admin/users" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-md transition-colors">
-                    <Shield className="w-4 h-4" />관리자
+                  <Link href="/admin/users" className="flex items-center p-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-colors" title="관리자 페이지">
+                    <Shield className="w-4 h-4" />
                   </Link>
                 )}
                 <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">

@@ -37,6 +37,9 @@ class PostResponse(BaseModel):
     updated_at: datetime
     author: str
     author_points: int = 0
+    author_role: str = "USER"
+    author_is_mod: bool = False
+    viewer_is_mod: bool = False
     files: list[FileResponse] = []
     my_vote: str | None = None
     is_bookmarked: bool = False
@@ -57,6 +60,8 @@ class PostListItem(BaseModel):
     created_at: datetime
     author: str
     author_points: int = 0
+    author_role: str = "USER"
+    author_is_mod: bool = False
     comment_count: int = 0
 
     model_config = {"from_attributes": True}

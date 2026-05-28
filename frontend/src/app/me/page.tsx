@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { User, Mail, Lock, Save, Loader2, FileText, Star, Shield, Trash2 } from 'lucide-react'
-import { usersApi, blacklistApi } from '@/lib/api'
+import { User, Mail, Lock, Save, Loader2, FileText, Star, Shield, Trash2, ShieldCheck, ChevronDown, ChevronUp, ShieldOff } from 'lucide-react'
+import { usersApi, blacklistApi, moderationApi } from '@/lib/api'
 import { isAuthenticated } from '@/lib/auth'
-import type { User as UserType, BlacklistItem } from '@/types'
+import type { User as UserType, BlacklistItem, ModeratedCategory, ModeratorBanInfo } from '@/types'
 
 export default function MyPage() {
   const router = useRouter()
@@ -19,7 +19,11 @@ export default function MyPage() {
   const [postsTotal, setPostsTotal] = useState(0)
   const [postsPages, setPostsPages] = useState(1)
   const [blacklist, setBlacklist] = useState<BlacklistItem[]>([])
-  const [activeTab, setActiveTab] = useState<'profile' | 'posts' | 'blacklist'>('profile')
+  const [moderatedCategories, setModeratedCategories] = useState<ModeratedCategory[]>([])
+  const [expandedCatId, setExpandedCatId] = useState<number | null>(null)
+  const [bansMap, setBansMap] = useState<Record<number, ModeratorBanInfo[]>>({})
+  const [bansLoading, setBansLoading] = useState<Record<number, boolean>>({})
+  const [activeTab, setActiveTab] = useState<'profile' | 'posts' | 'blacklist' | 'moderation'>('profile')
 
   // 프로필 수정 폼
   const [username, setUsername] = useState('')
@@ -40,7 +44,40 @@ export default function MyPage() {
   useEffect(() => {
     if (activeTab === 'posts') loadMyPosts(postsPage)
     if (activeTab === 'blacklist') loadBlacklist()
+    if (activeTab === 'moderation') loadModeratedCategories()
   }, [activeTab, postsPage])
+
+  const loadModeratedCategories = async () => {
+    try {
+      const cats = await moderationApi.getMyModeratedCategories()
+      setModeratedCategories(cats)
+    } catch { setModeratedCategories([]) }
+  }
+
+  const toggleBans = async (catId: number) => {
+    if (expandedCatId === catId) { setExpandedCatId(null); return }
+    setExpandedCatId(catId)
+    if (bansMap[catId]) return
+    setBansLoading(prev => ({ ...prev, [catId]: true }))
+    try {
+      const bans = await moderationApi.getBans(catId)
+      setBansMap(prev => ({ ...prev, [catId]: bans }))
+    } catch { setBansMap(prev => ({ ...prev, [catId]: [] })) }
+    finally { setBansLoading(prev => ({ ...prev, [catId]: false })) }
+  }
+
+  const handleUnbanUser = async (userId: string, catId: number) => {
+    if (!window.confirm('차단을 해제하시겠습니까?')) return
+    try {
+      await moderationApi.unban(userId, catId)
+      setBansMap(prev => ({ ...prev, [catId]: (prev[catId] ?? []).filter(b => b.banned_user_id !== userId) }))
+    } catch (e: any) { alert(e.response?.data?.detail || '해제에 실패했습니다.') }
+  }
+
+  const formatExpiry = (expiresAt: string | null) => {
+    if (!expiresAt) return '영구'
+    return format(new Date(expiresAt), 'yyyy.MM.dd HH:mm', { locale: ko }) + ' 까지'
+  }
 
   const loadProfile = async () => {
     try {
@@ -121,11 +158,11 @@ export default function MyPage() {
       </div>
 
       {/* 탭 */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-        {(['profile', 'posts', 'blacklist'] as const).map(tab => (
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-wrap">
+        {(['profile', 'posts', 'blacklist', 'moderation'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
-            {tab === 'profile' ? '프로필 수정' : tab === 'posts' ? `내 게시글 (${postsTotal})` : '차단 목록'}
+            {tab === 'profile' ? '프로필 수정' : tab === 'posts' ? `내 게시글 (${postsTotal})` : tab === 'blacklist' ? '차단 목록' : '운영 게시판'}
           </button>
         ))}
       </div>
@@ -252,6 +289,85 @@ export default function MyPage() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 운영 게시판 탭 */}
+      {activeTab === 'moderation' && (
+        <div className="space-y-3">
+          {moderatedCategories.length === 0 ? (
+            <div className="card p-10 text-center text-gray-400">
+              <ShieldCheck className="w-10 h-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">운영 중인 게시판이 없습니다.</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500 px-1">총 {moderatedCategories.length}개 게시판을 운영 중입니다.</p>
+              {moderatedCategories.map(cat => (
+                <div key={cat.id} className="card overflow-hidden">
+                  {/* 카테고리 헤더 */}
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+                        <ShieldCheck className="w-4 h-4 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{cat.name}</p>
+                        {cat.group && <p className="text-xs text-gray-400">{cat.group}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a href={`/posts?category=${cat.slug}`} className="text-xs text-teal-600 hover:underline px-2">
+                        게시판 보기
+                      </a>
+                      <button
+                        onClick={() => toggleBans(cat.id)}
+                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2.5 py-1.5 transition-colors"
+                      >
+                        <ShieldOff className="w-3.5 h-3.5" />
+                        차단 관리
+                        {expandedCatId === cat.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 차단 목록 (펼침) */}
+                  {expandedCatId === cat.id && (
+                    <div className="border-t border-gray-100 bg-gray-50 p-4">
+                      {bansLoading[cat.id] ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                        </div>
+                      ) : !bansMap[cat.id] || bansMap[cat.id].length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-3">차단된 사용자가 없습니다.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {bansMap[cat.id].map(ban => (
+                            <div key={ban.banned_user_id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2.5 border border-gray-100">
+                              <div className="flex items-center gap-2">
+                                <ShieldOff className="w-4 h-4 text-red-400 flex-shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">{ban.banned_username}</p>
+                                  <p className="text-xs text-gray-400">{formatExpiry(ban.expires_at)}</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleUnbanUser(ban.banned_user_id, cat.id)}
+                                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                차단 해제
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>

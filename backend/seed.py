@@ -18,7 +18,7 @@ from app.security.password import get_password_hash
 from app.database import AsyncSessionLocal
 from app.models.category import Category as CategoryModel
 from app.models.post import Post
-from app.models.user import User
+from app.models.user import User, UserRole
 
 # ── 설정 ─────────────────────────────────────────────────────────────────────
 
@@ -548,7 +548,7 @@ async def seed() -> None:
         print("🗑️  기존 데이터 초기화 중...")
         await db.execute(text(
             "TRUNCATE TABLE attendances, bookmarks, blacklists, reports, "
-            "post_votes, comment_votes, point_transactions, files, comments, posts, users "
+            "post_votes, comment_votes, point_transactions, files, comments, posts, users, category_moderators, moderator_bans "
             "RESTART IDENTITY CASCADE"
         ))
         await db.commit()
@@ -566,6 +566,21 @@ async def seed() -> None:
         cat_by_slug = {c.slug: c for c in categories}
         slug_list = [s for s in cat_by_slug.keys() if s in TITLES]
         weights = [WEIGHTS.get(s, 3) for s in slug_list]
+
+        # admin 계정 생성
+        print("👤 admin 계정 생성 중...")
+        admin_pw = get_password_hash("Admin1234!")
+        admin = User(
+            username="admin",
+            email="admin@modak.dev",
+            hashed_password=admin_pw,
+            is_active=True,
+            role=UserRole.ADMIN,
+            points=0,
+        )
+        db.add(admin)
+        await db.commit()
+        print("   아이디: admin / 비밀번호: Admin1234!")
 
         # 기존 유저 로드 (user01~user100)
         existing_users_result = await db.execute(

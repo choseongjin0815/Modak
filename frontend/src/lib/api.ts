@@ -182,6 +182,23 @@ export const blacklistApi = {
   },
 }
 
+export const moderationApi = {
+  ban: async (userId: string, categoryId: number, duration: string) => {
+    await apiClient.post('/moderation/bans', { user_id: userId, category_id: categoryId, duration })
+  },
+  unban: async (userId: string, categoryId: number) => {
+    await apiClient.delete('/moderation/bans', { data: { user_id: userId, category_id: categoryId } })
+  },
+  getBans: async (categoryId: number) => {
+    const { data } = await apiClient.get(`/moderation/bans/${categoryId}`)
+    return data
+  },
+  getMyModeratedCategories: async () => {
+    const { data } = await apiClient.get('/users/me/moderated-categories')
+    return data
+  },
+}
+
 export const reportsApi = {
   create: async (payload: { target_type: ReportTargetType; target_id: string; reason: string }) => {
     const { data } = await apiClient.post('/reports', payload)
@@ -221,5 +238,15 @@ export const adminApi = {
   resolveReport: async (reportId: string, status: 'RESOLVED' | 'REJECTED') => {
     const { data } = await apiClient.put(`/admin/reports/${reportId}`, { status })
     return data
+  },
+  getModerators: async () => {
+    const { data } = await apiClient.get('/admin/moderators')
+    return data as { user_id: string; username: string; category_id: number; category_name: string; category_slug: string; created_at: string }[]
+  },
+  assignModerator: async (userId: string, categoryId: number) => {
+    await apiClient.post('/admin/moderators', { user_id: userId, category_id: categoryId })
+  },
+  revokeModerator: async (userId: string, categoryId: number) => {
+    await apiClient.delete(`/admin/moderators/${userId}/${categoryId}`)
   },
 }

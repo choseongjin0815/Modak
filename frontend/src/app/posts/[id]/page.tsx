@@ -17,7 +17,9 @@ import { useToggleBookmark } from '@/hooks/useBookmarks'
 import { isAuthenticated, getUser } from '@/lib/auth'
 import { reportsApi, blacklistApi } from '@/lib/api'
 import CommentList from '@/components/comments/CommentList'
+import BanModal from '@/components/ui/BanModal'
 import LevelBadge from '@/components/ui/LevelBadge'
+import AuthorBadge from '@/components/ui/AuthorBadge'
 import type { FileInfo } from '@/types'
 
 export default function PostDetailPage() {
@@ -29,6 +31,7 @@ export default function PostDetailPage() {
   const [auth, setAuth] = useState(false)
   const [isAuthor, setIsAuthor] = useState(false)
   const [adminDeleted, setAdminDeleted] = useState(false)
+  const [showBanModal, setShowBanModal] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -174,6 +177,15 @@ export default function PostDetailPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+      {showBanModal && post?.category && (
+        <BanModal
+          targetUserId={post.user_id}
+          targetUsername={post.author}
+          categoryId={post.category.id}
+          onClose={() => setShowBanModal(false)}
+          onDone={() => { setShowBanModal(false); alert(`${post.author} 님을 게시판에서 차단했습니다.`) }}
+        />
+      )}
       <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
         <ArrowLeft className="w-4 h-4" />
         뒤로
@@ -197,24 +209,27 @@ export default function PostDetailPage() {
 
           <div className="flex items-start justify-between gap-3">
             <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex-1 leading-snug">{post.title}</h1>
-            {mounted && isAuthor && (
+            {mounted && (isAuthor || post?.viewer_is_mod) && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <Link href={`/posts/${id}/edit`} className="btn-secondary text-xs sm:text-sm px-2.5 sm:px-3 py-1.5">
-                  <Edit className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline">수정</span>
-                </Link>
+                {isAuthor && (
+                  <Link href={`/posts/${id}/edit`} className="btn-secondary text-xs sm:text-sm px-2.5 sm:px-3 py-1.5">
+                    <Edit className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">수정</span>
+                  </Link>
+                )}
                 <button onClick={handleDelete} disabled={isDeleting} className="btn-danger text-xs sm:text-sm px-2.5 sm:px-3 py-1.5">
                   {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                  <span className="hidden xs:inline">삭제</span>
+                  <span className="hidden xs:inline">{isAuthor ? '삭제' : '운영자 삭제'}</span>
                 </button>
               </div>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2.5 text-xs sm:text-sm text-gray-500">
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 flex-wrap">
               <User className="w-3.5 h-3.5" />
               <LevelBadge points={post.author_points} />
+              <AuthorBadge role={post.author_role} isMod={post.author_is_mod} />
               {post.author}
             </span>
             <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{formattedDate}{isEdited && <span className="text-xs">(수정됨)</span>}</span>
@@ -228,6 +243,13 @@ export default function PostDetailPage() {
                 <button onClick={handleBlock} className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50">
                   <ShieldX className="w-3 h-3" />차단
                 </button>
+                {post?.viewer_is_mod && post?.category && (
+                  <>
+                    <button onClick={() => setShowBanModal(true)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors px-2 py-1 rounded hover:bg-red-50 font-medium">
+                      <ShieldX className="w-3 h-3" />게시판 차단
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -296,7 +318,7 @@ export default function PostDetailPage() {
         )}
       </div>
 
-      <CommentList postId={id} />
+      <CommentList postId={id} viewerIsMod={post?.viewer_is_mod} categoryId={post?.category?.id} />
     </div>
   )
 }
