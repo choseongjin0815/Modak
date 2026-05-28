@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { FileText, AlertCircle } from 'lucide-react'
+import { Flame, AlertCircle, Lock, X } from 'lucide-react'
 import { useLogin } from '@/hooks/useAuth'
 
 const loginSchema = z.object({
@@ -17,6 +17,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const { mutate: login, isPending, error } = useLogin()
+  const [alertOpen, setAlertOpen] = useState(false)
 
   const {
     register,
@@ -26,38 +27,76 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   })
 
+  useEffect(() => {
+    if (error) setAlertOpen(true)
+  }, [error])
+
   const onSubmit = (data: LoginFormData) => {
     login({ username: data.username, password: data.password })
   }
 
-  const getErrorMessage = () => {
-    if (!error) return null
-    const axiosError = error as { response?: { data?: { detail?: string } }; message?: string }
-    return axiosError.response?.data?.detail || axiosError.message || '로그인에 실패했습니다.'
-  }
+  const axiosError = error as { response?: { status?: number; data?: { detail?: string } }; message?: string } | null
+  const errorStatus = axiosError?.response?.status
+  const errorDetail = axiosError?.response?.data?.detail || axiosError?.message || '로그인에 실패했습니다.'
+  const isLocked = errorStatus === 423
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center">
+    <div
+      onClick={() => setAlertOpen(false)} 
+      className="min-h-[calc(100vh-8rem)] flex items-center justify-center"
+    >
+
+      {/* Alert Modal */}
+      {alertOpen && error && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className={`px-6 pt-6 pb-4 ${isLocked ? 'bg-amber-50' : 'bg-red-50'}`}>
+              <div className="flex items-start justify-between">
+                <div className={`p-2 rounded-full ${isLocked ? 'bg-amber-100' : 'bg-red-100'}`}>
+                  {isLocked
+                    ? <Lock className="w-6 h-6 text-amber-600" />
+                    : <AlertCircle className="w-6 h-6 text-red-500" />
+                  }
+                </div>
+                <button onClick={() => setAlertOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <h2 className={`mt-3 text-base font-bold ${isLocked ? 'text-amber-900' : 'text-red-800'}`}>
+                {isLocked ? '계정이 잠겼습니다' : '로그인 실패'}
+              </h2>
+              <p className={`mt-1 text-sm ${isLocked ? 'text-amber-700' : 'text-red-600'}`}>
+                {errorDetail}
+              </p>
+            </div>
+            <div className="px-6 py-4">
+              <button
+                onClick={() => setAlertOpen(false)}
+                className={`w-full py-2 rounded-lg text-sm font-semibold text-white transition-colors ${
+                  isLocked
+                    ? 'bg-amber-500 hover:bg-amber-600'
+                    : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md">
         <div className="card p-8">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-3">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <FileText className="w-8 h-8 text-blue-600" />
+              <div className="p-3 bg-orange-100 rounded-full">
+                <Flame className="w-8 h-8 text-orange-500" />
               </div>
             </div>
             <h1 className="text-2xl font-bold text-gray-900">로그인</h1>
             <p className="text-sm text-gray-500 mt-1">계정에 로그인하세요</p>
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{getErrorMessage()}</p>
-            </div>
-          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
