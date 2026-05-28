@@ -35,6 +35,10 @@ export const categoriesApi = {
     const { data } = await apiClient.get<CategoryItem[]>('/categories')
     return data
   },
+  getGroupStats: async (): Promise<Record<string, number>> => {
+    const { data } = await apiClient.get<Record<string, number>>('/categories/group-stats')
+    return data
+  },
 }
 
 export const authApi = {
