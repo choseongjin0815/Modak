@@ -101,6 +101,7 @@ export interface PostListResult {
   page: number
   size: number
   pages: number
+  hot_threshold: number
 }
 
 export interface Comment {

@@ -68,3 +68,4 @@ class PostListResult(BaseModel):
     page: int
     size: int
     pages: int
+    hot_threshold: int = 0

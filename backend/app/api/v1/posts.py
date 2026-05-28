@@ -11,7 +11,7 @@ from app.repository.blacklist_repository import BlacklistRepository, get_blackli
 from app.repository.bookmark_repository import BookmarkRepository, get_bookmark_repo
 from app.repository.category_repository import CategoryRepository, get_category_repo
 from app.repository.point_repository import PointRepository, get_point_repo
-from app.repository.post_repository import PostRepository, get_post_repo
+from app.repository.post_repository import HOT_THRESHOLD, PostRepository, get_post_repo
 from app.repository.vote_repository import VoteRepository, get_vote_repo
 from app.config import settings
 from app.models.user import User
@@ -39,7 +39,7 @@ def build_post_response(post, my_vote: str | None = None, is_bookmarked: bool = 
         up_votes=post.up_votes,
         down_votes=post.down_votes,
         net_votes=post.up_votes - post.down_votes,
-        is_hot=(post.up_votes - post.down_votes) >= 30,
+        is_hot=(post.up_votes - post.down_votes) >= HOT_THRESHOLD,
         category=category,
         created_at=post.created_at,
         updated_at=post.updated_at,

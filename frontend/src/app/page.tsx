@@ -36,7 +36,7 @@ export default function HomePage() {
           </h1>
           {data && (
             <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-              추천 30+ 게시글 {data.total.toLocaleString()}개
+              추천 {data.hot_threshold}+ 게시글 {data.total.toLocaleString()}개
             </p>
           )}
         </div>
@@ -71,7 +71,7 @@ export default function HomePage() {
           <div className="flex flex-col items-center gap-3 text-gray-400">
             <FileX className="w-12 h-12" />
             <p className="text-sm">아직 인기글이 없습니다.</p>
-            <p className="text-xs text-gray-400">추천 30개 이상 받은 게시글이 표시됩니다.</p>
+            <p className="text-xs text-gray-400">추천 {data?.hot_threshold}개 이상 받은 게시글이 표시됩니다.</p>
           </div>
         </div>
       ) : (

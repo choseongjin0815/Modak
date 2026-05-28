@@ -16,7 +16,7 @@ from app.models.user import User
 from app.schemas.category import CategoryResponse
 from app.schemas.post import PostCreate, PostListItem, PostListResult
 
-HOT_THRESHOLD = 30  # net_votes >= 30
+HOT_THRESHOLD = 100  # net_votes >= 100
 
 
 class PostRepository:
@@ -137,6 +137,7 @@ class PostRepository:
             page=page,
             size=size,
             pages=math.ceil(total / size) if total > 0 else 1,
+            hot_threshold=HOT_THRESHOLD,
         )
 
     async def update(self, post: Post, **fields: Any) -> Post:
