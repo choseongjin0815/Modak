@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, User, Menu, X, ChevronDown, Flame, Star, Calendar, Shield, Settings } from 'lucide-react'
+import { LogOut, User, Menu, X, ChevronDown, Flame, Star, Calendar, Shield, Settings, Mail } from 'lucide-react'
 import { getUser, isAuthenticated, isAdmin as checkIsAdmin, removeToken } from '@/lib/auth'
 import { useMyPoints, useAttendance } from '@/hooks/usePoints'
 import { useSortedCategoryGroups } from '@/hooks/useCategories'
+import NotificationBell from '@/components/layout/NotificationBell'
 
 // 우선순위 낮은 순(앞) → 높은 순(뒤): 화면이 좁아질수록 앞에서부터 숨겨짐
 // Tailwind JIT가 감지할 수 있도록 반드시 정적 문자열로 선언
@@ -154,6 +155,10 @@ export default function Navbar() {
                   <User className="w-4 h-4 text-gray-400" />
                   <LevelBadge points={pointData?.points ?? 0} />
                   <span className="font-medium max-w-[100px] truncate">{username}</span>
+                </Link>
+                <NotificationBell />
+                <Link href="/messages" className="relative p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors" title="쪽지함">
+                  <Mail className="w-4 h-4" />
                 </Link>
                 {isAdmin && (
                   <Link href="/admin/users" className="flex items-center p-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-colors" title="관리자 페이지">

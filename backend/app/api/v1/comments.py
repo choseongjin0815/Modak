@@ -7,6 +7,7 @@ from app.models.user import User
 from app.repository.category_moderator_repository import CategoryModeratorRepository, get_category_mod_repo
 from app.repository.comment_repository import CommentRepository, get_comment_repo
 from app.repository.moderator_ban_repository import ModeratorBanRepository, get_moderator_ban_repo
+from app.repository.notification_repository import NotificationRepository, get_notification_repo
 from app.repository.point_repository import PointRepository, get_point_repo
 from app.repository.post_repository import PostRepository, get_post_repo
 from app.schemas.comment import CommentCreate, CommentResponse, CommentUpdate
@@ -61,6 +62,7 @@ async def create_comment(
     comment_repo: CommentRepository = Depends(get_comment_repo),
     point_repo: PointRepository = Depends(get_point_repo),
     ban_repo: ModeratorBanRepository = Depends(get_moderator_ban_repo),
+    noti_repo: NotificationRepository = Depends(get_notification_repo),
     current_user: User = Depends(get_current_active_user),
 ):
     post = await post_repo.get_by_id(post_id)
@@ -78,6 +80,34 @@ async def create_comment(
     comment = await comment_repo.create(post_id, current_user.id, comment_in)
     point_svc = PointService(point_repo)
     await point_svc.award_comment_created(current_user.id, post_id)
+
+    # 알림 발송
+    actor = current_user.username
+    post_link = f"/posts/{post_id}"
+    notified: set = set()
+
+    # 대댓글: 부모 댓글 작성자에게 알림
+    if comment_in.parent_id and parent:
+        if parent.user_id != current_user.id:
+            await noti_repo.create(
+                user_id=parent.user_id,
+                type="comment_reply",
+                actor=actor,
+                content=f"{actor}님이 내 댓글에 답글을 달았습니다.",
+                link=post_link,
+            )
+            notified.add(parent.user_id)
+
+    # 게시글 작성자에게 댓글 알림 (중복 제외)
+    if post.user_id != current_user.id and post.user_id not in notified:
+        await noti_repo.create(
+            user_id=post.user_id,
+            type="post_comment",
+            actor=actor,
+            content=f"{actor}님이 내 게시글에 댓글을 달았습니다.",
+            link=post_link,
+        )
+
     return build_comment_response(comment)
 
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { Edit2, Trash2, Check, X, User, Loader2, ThumbsUp, ThumbsDown, Flag, ShieldX, ShieldAlert, ShieldOff, CornerDownRight } from 'lucide-react'
+import { Edit2, Trash2, Check, X, User, Loader2, ThumbsUp, ThumbsDown, Flag, ShieldX, ShieldAlert, ShieldOff, CornerDownRight, Mail } from 'lucide-react'
 import { useUpdateComment, useDeleteComment } from '@/hooks/useComments'
 import { useVoteComment } from '@/hooks/useVotes'
 import { reportsApi, blacklistApi } from '@/lib/api'
@@ -11,6 +11,7 @@ import type { Comment } from '@/types'
 import LevelBadge from '@/components/ui/LevelBadge'
 import AuthorBadge from '@/components/ui/AuthorBadge'
 import BanModal from '@/components/ui/BanModal'
+import MessageModal from '@/components/ui/MessageModal'
 import CommentForm from './CommentForm'
 
 interface CommentItemProps {
@@ -28,6 +29,7 @@ export default function CommentItem({ comment, replies = [], postId, currentUser
   const [editContent, setEditContent] = useState(comment.content)
   const [showBanModal, setShowBanModal] = useState(false)
   const [showReplyForm, setShowReplyForm] = useState(false)
+  const [showMessageModal, setShowMessageModal] = useState(false)
   const [localVote, setLocalVote] = useState<'up' | 'down' | null>(comment.my_vote)
   const [localUpVotes, setLocalUpVotes] = useState(comment.up_votes)
   const [localDownVotes, setLocalDownVotes] = useState(comment.down_votes)
@@ -112,6 +114,12 @@ export default function CommentItem({ comment, replies = [], postId, currentUser
 
   return (
     <div className="py-4 border-b border-gray-100 last:border-0">
+      {showMessageModal && (
+        <MessageModal
+          defaultReceiver={comment.author}
+          onClose={() => setShowMessageModal(false)}
+        />
+      )}
       {showBanModal && categoryId && (
         <BanModal
           targetUserId={comment.user_id}
@@ -152,6 +160,9 @@ export default function CommentItem({ comment, replies = [], postId, currentUser
           )}
           {currentUserId && !isAuthor && !isEditing && (
             <>
+              <button onClick={() => setShowMessageModal(true)} className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors" title="쪽지">
+                <Mail className="w-3.5 h-3.5" />
+              </button>
               <button onClick={handleReport} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors" title="신고">
                 <Flag className="w-3.5 h-3.5" />
               </button>

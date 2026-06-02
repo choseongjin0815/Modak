@@ -186,6 +186,48 @@ export const blacklistApi = {
   },
 }
 
+export const messagesApi = {
+  send: async (receiverUsername: string, content: string) => {
+    const { data } = await apiClient.post('/messages', { receiver_username: receiverUsername, content })
+    return data
+  },
+  getInbox: async (page = 1, size = 20) => {
+    const { data } = await apiClient.get('/messages/inbox', { params: { page, size } })
+    return data
+  },
+  getSent: async (page = 1, size = 20) => {
+    const { data } = await apiClient.get('/messages/sent', { params: { page, size } })
+    return data
+  },
+  getUnreadCount: async (): Promise<{ count: number }> => {
+    const { data } = await apiClient.get('/messages/unread-count')
+    return data
+  },
+  markRead: async (id: string) => {
+    await apiClient.patch(`/messages/${id}/read`)
+  },
+  delete: async (id: string) => {
+    await apiClient.delete(`/messages/${id}`)
+  },
+}
+
+export const notificationsApi = {
+  getList: async (page = 1, size = 20) => {
+    const { data } = await apiClient.get('/notifications', { params: { page, size } })
+    return data
+  },
+  getUnreadCount: async (): Promise<{ count: number }> => {
+    const { data } = await apiClient.get('/notifications/unread-count')
+    return data
+  },
+  markRead: async (id: string) => {
+    await apiClient.patch(`/notifications/${id}/read`)
+  },
+  markAllRead: async () => {
+    await apiClient.patch('/notifications/read-all')
+  },
+}
+
 export const moderationApi = {
   ban: async (userId: string, categoryId: number, duration: string) => {
     await apiClient.post('/moderation/bans', { user_id: userId, category_id: categoryId, duration })

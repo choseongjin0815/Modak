@@ -58,6 +58,28 @@ export interface FileInfo {
   content_type: string
 }
 
+export interface Message {
+  id: string
+  sender_id: string
+  sender_username: string
+  receiver_id: string
+  receiver_username: string
+  other_username: string
+  content: string
+  is_read: boolean
+  created_at: string
+}
+
+export interface Notification {
+  id: string
+  type: 'post_comment' | 'comment_reply' | 'new_message'
+  actor: string
+  content: string
+  link: string | null
+  is_read: boolean
+  created_at: string
+}
+
 export interface ModeratedCategory {
   id: number
   slug: string
