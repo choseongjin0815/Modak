@@ -3,10 +3,23 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, User, Menu, X, ChevronDown, Flame, Star, Calendar, Shield, Settings } from 'lucide-react'
+import { LogOut, User, Menu, X, ChevronDown, Flame, Star, Calendar, Shield, Settings, Mail } from 'lucide-react'
 import { getUser, isAuthenticated, isAdmin as checkIsAdmin, removeToken } from '@/lib/auth'
 import { useMyPoints, useAttendance } from '@/hooks/usePoints'
-import { useCategoryGroups } from '@/hooks/useCategories'
+import { useSortedCategoryGroups } from '@/hooks/useCategories'
+import NotificationBell from '@/components/layout/NotificationBell'
+
+// 우선순위 낮은 순(앞) → 높은 순(뒤): 화면이 좁아질수록 앞에서부터 숨겨짐
+// Tailwind JIT가 감지할 수 있도록 반드시 정적 문자열로 선언
+const NAV_BREAKPOINTS = [
+  'hidden min-[1260px]:block',
+  'hidden min-[1140px]:block',
+  'hidden min-[1030px]:block',
+  'hidden min-[930px]:block',
+  'hidden min-[830px]:block',
+  'hidden min-[740px]:block',
+  'hidden sm:block',
+] as const
 import LevelBadge from '@/components/ui/LevelBadge'
 
 export default function Navbar() {
@@ -21,7 +34,7 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false)
   const { data: pointData } = useMyPoints(mounted && authenticated)
   const { mutate: checkAttendance, isPending: isCheckingIn } = useAttendance()
-  const categoryGroups = useCategoryGroups()
+  const sortedGroups = useSortedCategoryGroups()
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -33,15 +46,24 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  useEffect(() => {
-    setMounted(true)
+  const syncAuth = () => {
     const auth = isAuthenticated()
     setAuthenticated(auth)
     if (auth) {
       const user = getUser()
       setUsername((user?.username as string) ?? (user?.sub as string) ?? null)
       setIsAdmin(checkIsAdmin())
+    } else {
+      setUsername(null)
+      setIsAdmin(false)
     }
+  }
+
+  useEffect(() => {
+    setMounted(true)
+    syncAuth()
+    window.addEventListener('auth-change', syncAuth)
+    return () => window.removeEventListener('auth-change', syncAuth)
   }, [])
 
   const handleLogout = () => {
@@ -82,16 +104,19 @@ export default function Navbar() {
               인기글
             </Link>
 
-            {Object.entries(categoryGroups).map(([key, group]) => (
-              <div key={key} className="relative">
+            {sortedGroups.map((group, idx) => (
+              <div
+                key={group.key}
+                className={`relative ${NAV_BREAKPOINTS[Math.min(idx, NAV_BREAKPOINTS.length - 1)]}`}
+              >
                 <button
-                  onClick={() => setOpenDropdown(openDropdown === key ? null : key)}
+                  onClick={() => setOpenDropdown(openDropdown === group.key ? null : group.key)}
                   className="flex items-center gap-1 px-2.5 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors whitespace-nowrap"
                 >
                   {group.label}
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdown === key ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdown === group.key ? 'rotate-180' : ''}`} />
                 </button>
-                {openDropdown === key && (
+                {openDropdown === group.key && (
                   <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-50">
                     {group.categories.map((cat) => (
                       <Link
@@ -110,7 +135,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop right */}
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
             {mounted && authenticated ? (
               <>
                 <button
@@ -131,9 +156,13 @@ export default function Navbar() {
                   <LevelBadge points={pointData?.points ?? 0} />
                   <span className="font-medium max-w-[100px] truncate">{username}</span>
                 </Link>
+                <NotificationBell />
+                <Link href="/messages" className="relative p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors" title="쪽지함">
+                  <Mail className="w-4 h-4" />
+                </Link>
                 {isAdmin && (
-                  <Link href="/admin/users" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-md transition-colors">
-                    <Shield className="w-4 h-4" />관리자
+                  <Link href="/admin/users" className="flex items-center p-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-colors" title="관리자 페이지">
+                    <Shield className="w-4 h-4" />
                   </Link>
                 )}
                 <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
@@ -164,16 +193,16 @@ export default function Navbar() {
             인기글
           </Link>
 
-          {Object.entries(categoryGroups).map(([key, group]) => (
-            <div key={key}>
+          {sortedGroups.map((group) => (
+            <div key={group.key}>
               <button
-                onClick={() => setOpenDropdown(openDropdown === key ? null : key)}
+                onClick={() => setOpenDropdown(openDropdown === group.key ? null : group.key)}
                 className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
               >
                 {group.label}
-                <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === key ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === group.key ? 'rotate-180' : ''}`} />
               </button>
-              {openDropdown === key && (
+              {openDropdown === group.key && (
                 <div className="pl-4 space-y-0.5">
                   {group.categories.map((cat) => (
                     <Link

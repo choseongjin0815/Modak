@@ -8,11 +8,13 @@ export const getToken = (): string | null => {
 export const setToken = (token: string): void => {
   if (typeof window === 'undefined') return
   localStorage.setItem(TOKEN_KEY, token)
+  window.dispatchEvent(new Event('auth-change'))
 }
 
 export const removeToken = (): void => {
   if (typeof window === 'undefined') return
   localStorage.removeItem(TOKEN_KEY)
+  window.dispatchEvent(new Event('auth-change'))
 }
 
 interface JwtPayload {

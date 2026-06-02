@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.security.jwt import create_access_token
-from app.repository.user_repository import UserRepository, get_user_repo
+from app.repository.user_repository import AccountLockedException, UserRepository, get_user_repo
 from app.schemas.user import Token, UserCreate, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -25,7 +25,14 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_repo: UserRepository = Depends(get_user_repo),
 ):
-    user = await user_repo.authenticate(form_data.username, form_data.password)
+    try:
+        user = await user_repo.authenticate(form_data.username, form_data.password)
+    except AccountLockedException as e:
+        unlock = e.locked_until.strftime("%Y년 %m월 %d일 %H:%M")
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=f"로그인 5회 실패로 계정이 잠겼습니다. {unlock}에 잠금이 해제됩니다.",
+        )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

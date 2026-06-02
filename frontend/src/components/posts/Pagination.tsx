@@ -106,7 +106,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handlePageJump()}
         onBlur={handlePageJump}
-        className="ml-4 w-8 h-8 px-2 text-sm text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="ml-4 w-12 h-8 px-2 text-sm text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-label="페이지 번호 입력"
       />
     </div>

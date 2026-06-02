@@ -3,22 +3,33 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { Edit2, Trash2, Check, X, User, Loader2, ThumbsUp, ThumbsDown, Flag, ShieldX, ShieldAlert } from 'lucide-react'
+import { Edit2, Trash2, Check, X, User, Loader2, ThumbsUp, ThumbsDown, Flag, ShieldX, ShieldAlert, ShieldOff, CornerDownRight, Mail } from 'lucide-react'
 import { useUpdateComment, useDeleteComment } from '@/hooks/useComments'
 import { useVoteComment } from '@/hooks/useVotes'
 import { reportsApi, blacklistApi } from '@/lib/api'
 import type { Comment } from '@/types'
 import LevelBadge from '@/components/ui/LevelBadge'
+import AuthorBadge from '@/components/ui/AuthorBadge'
+import BanModal from '@/components/ui/BanModal'
+import MessageModal from '@/components/ui/MessageModal'
+import CommentForm from './CommentForm'
 
 interface CommentItemProps {
   comment: Comment
+  replies?: Comment[]
   postId: string
   currentUserId?: string
+  viewerIsMod?: boolean
+  categoryId?: number
+  isReply?: boolean
 }
 
-export default function CommentItem({ comment, postId, currentUserId }: CommentItemProps) {
+export default function CommentItem({ comment, replies = [], postId, currentUserId, viewerIsMod, categoryId, isReply = false }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
+  const [showBanModal, setShowBanModal] = useState(false)
+  const [showReplyForm, setShowReplyForm] = useState(false)
+  const [showMessageModal, setShowMessageModal] = useState(false)
   const [localVote, setLocalVote] = useState<'up' | 'down' | null>(comment.my_vote)
   const [localUpVotes, setLocalUpVotes] = useState(comment.up_votes)
   const [localDownVotes, setLocalDownVotes] = useState(comment.down_votes)
@@ -86,6 +97,9 @@ export default function CommentItem({ comment, postId, currentUserId }: CommentI
     }
   }
 
+  const canModDelete = viewerIsMod && !isAuthor && !comment.deleted_by_admin
+  const canModBan = viewerIsMod && !isAuthor && categoryId && !comment.deleted_by_admin
+
   // 관리자 삭제 댓글
   if (comment.deleted_by_admin) {
     return (
@@ -100,14 +114,30 @@ export default function CommentItem({ comment, postId, currentUserId }: CommentI
 
   return (
     <div className="py-4 border-b border-gray-100 last:border-0">
+      {showMessageModal && (
+        <MessageModal
+          defaultReceiver={comment.author}
+          onClose={() => setShowMessageModal(false)}
+        />
+      )}
+      {showBanModal && categoryId && (
+        <BanModal
+          targetUserId={comment.user_id}
+          targetUsername={comment.author}
+          categoryId={categoryId}
+          onClose={() => setShowBanModal(false)}
+          onDone={() => { setShowBanModal(false); alert(`${comment.author} 님을 차단했습니다.`) }}
+        />
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center">
             <User className="w-3.5 h-3.5 text-blue-600" />
           </div>
           <div>
-            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-900 flex-wrap">
               <LevelBadge points={comment.author_points} />
+              <AuthorBadge role={comment.author_role} isMod={comment.author_is_mod} />
               {comment.author}
             </span>
             <div className="flex items-center gap-1 text-xs text-gray-400">
@@ -130,6 +160,9 @@ export default function CommentItem({ comment, postId, currentUserId }: CommentI
           )}
           {currentUserId && !isAuthor && !isEditing && (
             <>
+              <button onClick={() => setShowMessageModal(true)} className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors" title="쪽지">
+                <Mail className="w-3.5 h-3.5" />
+              </button>
               <button onClick={handleReport} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors" title="신고">
                 <Flag className="w-3.5 h-3.5" />
               </button>
@@ -137,6 +170,16 @@ export default function CommentItem({ comment, postId, currentUserId }: CommentI
                 <ShieldX className="w-3.5 h-3.5" />
               </button>
             </>
+          )}
+          {canModDelete && (
+            <button onClick={handleDelete} disabled={isDeleting} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="운영자 삭제">
+              {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            </button>
+          )}
+          {canModBan && (
+            <button onClick={() => setShowBanModal(true)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="게시판 차단">
+              <ShieldOff className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
       </div>
@@ -174,10 +217,48 @@ export default function CommentItem({ comment, postId, currentUserId }: CommentI
                 <ThumbsDown className="w-3 h-3" />
                 <span>{localDownVotes}</span>
               </button>
+              {currentUserId && !isReply && !comment.deleted_by_admin && (
+                <button
+                  onClick={() => setShowReplyForm(prev => !prev)}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                >
+                  <CornerDownRight className="w-3 h-3" />
+                  답글 {replies.length > 0 && <span className="text-gray-400">{replies.length}</span>}
+                </button>
+              )}
             </div>
           </>
         )}
       </div>
+
+      {/* 답글 폼 */}
+      {showReplyForm && (
+        <div className="mt-3 pl-9">
+          <CommentForm
+            postId={postId}
+            parentId={comment.id}
+            replyTo={comment.author}
+            onCancel={() => setShowReplyForm(false)}
+          />
+        </div>
+      )}
+
+      {/* 대댓글 목록 */}
+      {!isReply && replies.length > 0 && (
+        <div className="mt-1 ml-4 pl-4 border-l-2 border-gray-100 space-y-0">
+          {replies.map(reply => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              postId={postId}
+              currentUserId={currentUserId}
+              viewerIsMod={viewerIsMod}
+              categoryId={categoryId}
+              isReply
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

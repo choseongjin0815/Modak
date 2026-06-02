@@ -1,5 +1,6 @@
 import math
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +10,14 @@ from app.security.password import get_password_hash, verify_password
 from app.models.post import Post
 from app.models.user import User, UserRole
 from app.schemas.user import UserCreate
+
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_DURATION = timedelta(days=1)
+
+
+class AccountLockedException(Exception):
+    def __init__(self, locked_until: datetime) -> None:
+        self.locked_until = locked_until
 
 
 class UserRepository:
@@ -42,8 +51,25 @@ class UserRepository:
         user = await self.get_by_username(username)
         if not user:
             return None
+
+        now = datetime.now(timezone.utc)
+        if user.locked_until and user.locked_until > now:
+            raise AccountLockedException(user.locked_until)
+
         if not verify_password(password, user.hashed_password):
+            user.failed_login_attempts += 1
+            if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
+                user.locked_until = now + LOCKOUT_DURATION
+                user.failed_login_attempts = 0
+            self.db.add(user)
+            await self.db.commit()
             return None
+
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
         return user
 
     async def update_profile(

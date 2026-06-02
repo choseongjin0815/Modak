@@ -11,7 +11,9 @@ from app.repository.blacklist_repository import BlacklistRepository, get_blackli
 from app.repository.bookmark_repository import BookmarkRepository, get_bookmark_repo
 from app.repository.category_repository import CategoryRepository, get_category_repo
 from app.repository.point_repository import PointRepository, get_point_repo
-from app.repository.post_repository import PostRepository, get_post_repo
+from app.repository.category_moderator_repository import CategoryModeratorRepository, get_category_mod_repo
+from app.repository.moderator_ban_repository import ModeratorBanRepository, get_moderator_ban_repo
+from app.repository.post_repository import HOT_THRESHOLD, PostRepository, get_post_repo
 from app.repository.vote_repository import VoteRepository, get_vote_repo
 from app.config import settings
 from app.models.user import User
@@ -28,7 +30,13 @@ class PostUpdateRequest(BaseModel):
     category: str | None = None  # slug string from client
 
 
-def build_post_response(post, my_vote: str | None = None, is_bookmarked: bool = False) -> PostResponse:
+def build_post_response(
+    post,
+    my_vote: str | None = None,
+    is_bookmarked: bool = False,
+    author_is_mod: bool = False,
+    viewer_is_mod: bool = False,
+) -> PostResponse:
     category = CategoryResponse.model_validate(post.category) if post.category else None
     return PostResponse(
         id=post.id,
@@ -39,12 +47,15 @@ def build_post_response(post, my_vote: str | None = None, is_bookmarked: bool = 
         up_votes=post.up_votes,
         down_votes=post.down_votes,
         net_votes=post.up_votes - post.down_votes,
-        is_hot=(post.up_votes - post.down_votes) >= 30,
+        is_hot=(post.up_votes - post.down_votes) >= HOT_THRESHOLD,
         category=category,
         created_at=post.created_at,
         updated_at=post.updated_at,
         author=post.user.username,
         author_points=post.user.points,
+        author_role=post.user.role.value,
+        author_is_mod=author_is_mod,
+        viewer_is_mod=viewer_is_mod,
         files=[
             FileResponse(
                 id=f.id,
@@ -124,9 +135,12 @@ async def create_post(
     post_repo: PostRepository = Depends(get_post_repo),
     category_repo: CategoryRepository = Depends(get_category_repo),
     point_repo: PointRepository = Depends(get_point_repo),
+    ban_repo: ModeratorBanRepository = Depends(get_moderator_ban_repo),
     current_user: User = Depends(get_current_active_user),
 ):
     category_id = await _resolve_category_id(category, category_repo)
+    if category_id and await ban_repo.is_banned(current_user.id, category_id):
+        raise HTTPException(status_code=403, detail="해당 게시판에서 차단된 사용자입니다")
     post = await post_repo.create(
         PostCreate(title=title, content=content, category_id=category_id), current_user.id
     )
@@ -143,6 +157,7 @@ async def get_post(
     post_repo: PostRepository = Depends(get_post_repo),
     vote_repo: VoteRepository = Depends(get_vote_repo),
     bookmark_repo: BookmarkRepository = Depends(get_bookmark_repo),
+    cat_mod_repo: CategoryModeratorRepository = Depends(get_category_mod_repo),
 ):
     post = await post_repo.get_by_id(post_id)
     if not post:
@@ -151,9 +166,10 @@ async def get_post(
         raise HTTPException(status_code=410, detail="관리자에 의해 삭제된 게시글입니다")
     if post.is_deleted:
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다")
+    is_mod = await cat_mod_repo.is_moderator(post.user_id, post.category_id)
     await post_repo.increment_view_count(post_id)
     post.view_count += 1
-    return build_post_response(post)
+    return build_post_response(post, author_is_mod=is_mod)
 
 
 @router.get("/{post_id}/detail", response_model=PostResponse)
@@ -162,6 +178,7 @@ async def get_post_with_auth(
     post_repo: PostRepository = Depends(get_post_repo),
     vote_repo: VoteRepository = Depends(get_vote_repo),
     bookmark_repo: BookmarkRepository = Depends(get_bookmark_repo),
+    cat_mod_repo: CategoryModeratorRepository = Depends(get_category_mod_repo),
     current_user: User = Depends(get_current_active_user),
 ):
     """인증된 사용자용 - my_vote, is_bookmarked 포함"""
@@ -172,10 +189,12 @@ async def get_post_with_auth(
         raise HTTPException(status_code=410, detail="관리자에 의해 삭제된 게시글입니다")
     if post.is_deleted:
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다")
+    is_mod = await cat_mod_repo.is_moderator(post.user_id, post.category_id)
+    viewer_is_mod = await cat_mod_repo.is_moderator(current_user.id, post.category_id)
     vote = await vote_repo.get_post_vote(current_user.id, post_id)
     bookmark = await bookmark_repo.get(current_user.id, post_id)
     my_vote = vote.vote_type.value if vote else None
-    return build_post_response(post, my_vote=my_vote, is_bookmarked=bookmark is not None)
+    return build_post_response(post, my_vote=my_vote, is_bookmarked=bookmark is not None, author_is_mod=is_mod, viewer_is_mod=viewer_is_mod)
 
 
 @router.put("/{post_id}", response_model=PostResponse)
@@ -209,14 +228,18 @@ async def update_post(
 async def delete_post(
     post_id: uuid.UUID,
     post_repo: PostRepository = Depends(get_post_repo),
+    cat_mod_repo: CategoryModeratorRepository = Depends(get_category_mod_repo),
     current_user: User = Depends(get_current_active_user),
 ):
     post = await post_repo.get_by_id(post_id)
     if not post:
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다")
-    if post.user_id != current_user.id:
+    if post.user_id == current_user.id:
+        await post_repo.delete(post)
+    elif await cat_mod_repo.is_moderator(current_user.id, post.category_id):
+        await post_repo.soft_delete(post, by_admin=True)
+    else:
         raise HTTPException(status_code=403, detail="삭제 권한이 없습니다")
-    await post_repo.delete(post)
 
 
 @router.post("/{post_id}/files", response_model=list)

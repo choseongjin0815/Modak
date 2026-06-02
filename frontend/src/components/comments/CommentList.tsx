@@ -9,9 +9,11 @@ import { useEffect, useState } from 'react'
 
 interface CommentListProps {
   postId: string
+  viewerIsMod?: boolean
+  categoryId?: number
 }
 
-export default function CommentList({ postId }: CommentListProps) {
+export default function CommentList({ postId, viewerIsMod, categoryId }: CommentListProps) {
   const { data: comments, isLoading, isError } = useComments(postId)
   const [mounted, setMounted] = useState(false)
   const [auth, setAuth] = useState(false)
@@ -56,14 +58,19 @@ export default function CommentList({ postId }: CommentListProps) {
           </div>
         ) : (
           <div>
-            {comments?.map((comment) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                postId={postId}
-                currentUserId={mounted ? currentUserId : undefined}
-              />
-            ))}
+            {comments
+              ?.filter(c => !c.parent_id)
+              .map((comment) => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  replies={comments.filter(c => c.parent_id === comment.id)}
+                  postId={postId}
+                  currentUserId={mounted ? currentUserId : undefined}
+                  viewerIsMod={viewerIsMod}
+                  categoryId={categoryId}
+                />
+              ))}
           </div>
         )}
       </div>

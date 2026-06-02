@@ -12,11 +12,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.v1 import admin, auth, blacklist, bookmarks, categories, chatbot, comments, files, points, posts, reports, users, votes
+from app.api.v1 import admin, auth, blacklist, bookmarks, categories, chatbot, comments, files, messages, moderation, notifications, points, posts, reports, users, visits, votes
 from app.services.chatbot import chatbot_service
 
 # Ensure all models are imported for Alembic autogenerate
-from app.models import attendance, blacklist as blacklist_model, bookmark, category as category_model, comment, file, point, post, report as report_model, user, vote as vote_model  # noqa
+from app.models import attendance, blacklist as blacklist_model, bookmark, category as category_model, category_moderator, comment, file, message, moderator_ban, notification, point, post, report as report_model, user, visit, vote as vote_model  # noqa
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,6 +50,10 @@ app.include_router(bookmarks.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(blacklist.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")
+app.include_router(visits.router, prefix="/api/v1")
+app.include_router(messages.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(moderation.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(chatbot.router, prefix="/api/v1")
 

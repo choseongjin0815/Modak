@@ -28,6 +28,8 @@ class User(Base):
         Enum(UserRole, name="userrole"), default=UserRole.USER, server_default="USER"
     )
     points: Mapped[int] = mapped_column(Integer, default=0)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

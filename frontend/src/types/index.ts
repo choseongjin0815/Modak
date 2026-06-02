@@ -58,6 +58,42 @@ export interface FileInfo {
   content_type: string
 }
 
+export interface Message {
+  id: string
+  sender_id: string
+  sender_username: string
+  receiver_id: string
+  receiver_username: string
+  other_username: string
+  content: string
+  is_read: boolean
+  created_at: string
+}
+
+export interface Notification {
+  id: string
+  type: 'post_comment' | 'comment_reply' | 'new_message'
+  actor: string
+  content: string
+  link: string | null
+  is_read: boolean
+  created_at: string
+}
+
+export interface ModeratedCategory {
+  id: number
+  slug: string
+  name: string
+  group: string | null
+}
+
+export interface ModeratorBanInfo {
+  banned_user_id: string
+  banned_username: string
+  expires_at: string | null
+  created_at: string
+}
+
 export interface Post {
   id: string
   title: string
@@ -73,6 +109,9 @@ export interface Post {
   updated_at: string
   author: string
   author_points: number
+  author_role: string
+  author_is_mod: boolean
+  viewer_is_mod: boolean
   files: FileInfo[]
   comment_count?: number
   my_vote: 'up' | 'down' | null
@@ -92,6 +131,8 @@ export interface PostListItem {
   created_at: string
   author: string
   author_points: number
+  author_role: string
+  author_is_mod: boolean
   comment_count: number
 }
 
@@ -101,6 +142,7 @@ export interface PostListResult {
   page: number
   size: number
   pages: number
+  hot_threshold: number
 }
 
 export interface Comment {
@@ -108,10 +150,13 @@ export interface Comment {
   content: string
   user_id: string
   post_id: string
+  parent_id: string | null
   created_at: string
   updated_at: string
   author: string
   author_points: number
+  author_role: string
+  author_is_mod: boolean
   up_votes: number
   down_votes: number
   my_vote: 'up' | 'down' | null

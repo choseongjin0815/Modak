@@ -3,12 +3,13 @@ import os
 import uuid
 from typing import Any, Literal
 
-from sqlalchemy import func, select, update
+from sqlalchemy import exists, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.models.category import Category
+from app.models.category_moderator import CategoryModerator
 from app.models.comment import Comment
 from app.models.file import File
 from app.models.post import Post
@@ -16,7 +17,7 @@ from app.models.user import User
 from app.schemas.category import CategoryResponse
 from app.schemas.post import PostCreate, PostListItem, PostListResult
 
-HOT_THRESHOLD = 30  # net_votes >= 30
+HOT_THRESHOLD = 100  # net_votes >= 100
 
 
 class PostRepository:
@@ -65,17 +66,26 @@ class PostRepository:
             .subquery()
         )
 
+        is_mod_sq = exists(
+            select(CategoryModerator.id).where(
+                CategoryModerator.user_id == Post.user_id,
+                CategoryModerator.category_id == Post.category_id,
+            ).correlate(Post)
+        )
+
         query = (
             select(
                 Post,
                 User.username,
                 User.points,
+                User.role.label("user_role"),
                 func.coalesce(comment_count_sq.c.comment_count, 0).label("comment_count"),
                 Category.id.label("cat_id"),
                 Category.slug.label("cat_slug"),
                 Category.name.label("cat_name"),
                 Category.group.label("cat_group"),
                 Category.sort_order.label("cat_sort_order"),
+                is_mod_sq.label("is_mod"),
             )
             .join(User, Post.user_id == User.id)
             .outerjoin(Category, Post.category_id == Category.id)
@@ -126,6 +136,8 @@ class PostRepository:
                 created_at=row.Post.created_at,
                 author=row.username,
                 author_points=row.points,
+                author_role=row.user_role.value,
+                author_is_mod=row.is_mod,
                 comment_count=row.comment_count,
             )
             for row in rows
@@ -137,6 +149,7 @@ class PostRepository:
             page=page,
             size=size,
             pages=math.ceil(total / size) if total > 0 else 1,
+            hot_threshold=HOT_THRESHOLD,
         )
 
     async def update(self, post: Post, **fields: Any) -> Post:
@@ -214,6 +227,10 @@ class PostRepository:
             for row in rows
         ]
         return {"items": items, "total": total, "page": page, "size": size, "pages": math.ceil(total / size) if total > 0 else 1}
+
+    async def get_category_id(self, post_id: uuid.UUID) -> int | None:
+        result = await self.db.execute(select(Post.category_id).where(Post.id == post_id))
+        return result.scalar_one_or_none()
 
     async def increment_view_count(self, post_id: uuid.UUID) -> None:
         await self.db.execute(

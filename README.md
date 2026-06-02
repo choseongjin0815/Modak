@@ -9,20 +9,34 @@
 | Backend | Python 3.13, FastAPI, SQLAlchemy 2.0 (async), PostgreSQL, Alembic |
 | Frontend | Next.js 14 (App Router), TypeScript, TanStack Query v5, Tailwind CSS |
 | AI | LangChain, ChromaDB, OpenAI GPT-4o-mini |
+| 실시간 | SSE (Server-Sent Events) |
 | 모니터링 | LangSmith |
 
 ## 주요 기능
 
-- **게시글** — 작성/수정/삭제, 파일 첨부, 카테고리 분류, 검색·정렬·페이지네이션
-- **댓글** — 대댓글 없이 단순 구조, 추천/비추천
-- **추천** — 게시글·댓글 추천/비추천. 순추천 30+ 시 HOT 게시글 표시
-- **포인트** — 게시글 작성·댓글 작성·추천 수신·출석체크 시 적립. 누적 포인트 기반 레벨 배지
-- **출석체크** — 1일 1회. 포인트 지급
-- **북마크** — 게시글 저장
-- **차단** — 특정 유저 차단 시 해당 유저 게시글 목록에서 제외
-- **신고** — 게시글·댓글 신고. 관리자 처리
-- **챗봇** — FAQ + DB 연동. 인기글·최신글·통계·게시글 검색 가능
-- **관리자** — 게시글 관리, 유저 관리, 신고 처리
+**게시판**
+- 게시글 작성·수정·삭제, 파일 첨부, 카테고리 분류
+- 검색·정렬(최신·조회수·추천순)·페이지네이션
+- 댓글·대댓글(1단계), 추천/비추천
+- 순추천 100+ 시 HOT 게시글 표시
+- 북마크, 신고, 유저 차단
+
+**소통**
+- 쪽지 — 유저 간 1:1 메시지, 받은쪽지·보낸쪽지함
+- 실시간 알림 — SSE 기반. 댓글·답글·쪽지 수신 즉시 Navbar 벨 표시
+
+**포인트 & 활동**
+- 게시글 작성·댓글·추천 수신·출석체크 시 포인트 적립
+- 누적 포인트 기반 레벨 배지
+
+**운영·관리**
+- 로그인 5회 실패 시 1일 계정 잠금
+- 카테고리별 운영자 지정 — 담당 게시판 글·댓글 삭제, 유저 기간 차단(1h~영구)
+- 관리자 — 회원·게시글·신고 관리, 운영자 지정·해제
+
+**기타**
+- FAQ + DB 연동 AI 챗봇 (인기글·최신글·통계 검색)
+- 오늘/총 방문자 수 하단 표시 (계정 단위 집계, 10분 체류마다 카운트)
 
 ## 카테고리
 
@@ -61,12 +75,11 @@ pip install -r requirements.txt
 
 # 환경변수 설정
 cp .env.example .env
-# .env에서 DATABASE_URL, SECRET_KEY, OPENAI_API_KEY 설정
 
 # DB 마이그레이션
 alembic upgrade head
 
-# 시드 데이터 삽입 (user01~user100, 게시글 20,000개)
+# 시드 데이터 삽입 (admin + user01~user100 + 게시글 20,000개)
 $env:PYTHONIOENCODING="utf-8"; python seed.py
 
 # 서버 실행
@@ -94,7 +107,7 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=3600
 UPLOAD_DIR=uploads
 
-# 챗봇 (선택, 없으면 챗봇만 비활성화)
+# 챗봇 (선택 — 없으면 챗봇만 비활성화, 서버는 정상 기동)
 OPENAI_API_KEY=sk-...
 
 # LangSmith 모니터링 (선택)
