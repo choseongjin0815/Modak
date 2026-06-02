@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { Edit2, Trash2, Check, X, User, Loader2, ThumbsUp, ThumbsDown, Flag, ShieldX, ShieldAlert, ShieldOff } from 'lucide-react'
+import { Edit2, Trash2, Check, X, User, Loader2, ThumbsUp, ThumbsDown, Flag, ShieldX, ShieldAlert, ShieldOff, CornerDownRight } from 'lucide-react'
 import { useUpdateComment, useDeleteComment } from '@/hooks/useComments'
 import { useVoteComment } from '@/hooks/useVotes'
 import { reportsApi, blacklistApi } from '@/lib/api'
@@ -11,19 +11,23 @@ import type { Comment } from '@/types'
 import LevelBadge from '@/components/ui/LevelBadge'
 import AuthorBadge from '@/components/ui/AuthorBadge'
 import BanModal from '@/components/ui/BanModal'
+import CommentForm from './CommentForm'
 
 interface CommentItemProps {
   comment: Comment
+  replies?: Comment[]
   postId: string
   currentUserId?: string
   viewerIsMod?: boolean
   categoryId?: number
+  isReply?: boolean
 }
 
-export default function CommentItem({ comment, postId, currentUserId, viewerIsMod, categoryId }: CommentItemProps) {
+export default function CommentItem({ comment, replies = [], postId, currentUserId, viewerIsMod, categoryId, isReply = false }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
   const [showBanModal, setShowBanModal] = useState(false)
+  const [showReplyForm, setShowReplyForm] = useState(false)
   const [localVote, setLocalVote] = useState<'up' | 'down' | null>(comment.my_vote)
   const [localUpVotes, setLocalUpVotes] = useState(comment.up_votes)
   const [localDownVotes, setLocalDownVotes] = useState(comment.down_votes)
@@ -202,10 +206,48 @@ export default function CommentItem({ comment, postId, currentUserId, viewerIsMo
                 <ThumbsDown className="w-3 h-3" />
                 <span>{localDownVotes}</span>
               </button>
+              {currentUserId && !isReply && !comment.deleted_by_admin && (
+                <button
+                  onClick={() => setShowReplyForm(prev => !prev)}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                >
+                  <CornerDownRight className="w-3 h-3" />
+                  답글 {replies.length > 0 && <span className="text-gray-400">{replies.length}</span>}
+                </button>
+              )}
             </div>
           </>
         )}
       </div>
+
+      {/* 답글 폼 */}
+      {showReplyForm && (
+        <div className="mt-3 pl-9">
+          <CommentForm
+            postId={postId}
+            parentId={comment.id}
+            replyTo={comment.author}
+            onCancel={() => setShowReplyForm(false)}
+          />
+        </div>
+      )}
+
+      {/* 대댓글 목록 */}
+      {!isReply && replies.length > 0 && (
+        <div className="mt-1 ml-4 pl-4 border-l-2 border-gray-100 space-y-0">
+          {replies.map(reply => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              postId={postId}
+              currentUserId={currentUserId}
+              viewerIsMod={viewerIsMod}
+              categoryId={categoryId}
+              isReply
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

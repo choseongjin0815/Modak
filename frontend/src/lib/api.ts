@@ -98,8 +98,8 @@ export const commentsApi = {
     const { data } = await apiClient.get<Comment[]>(`/posts/${postId}/comments`)
     return data
   },
-  createComment: async (postId: string, content: string): Promise<Comment> => {
-    const { data } = await apiClient.post<Comment>(`/posts/${postId}/comments`, { content })
+  createComment: async (postId: string, content: string, parentId?: string): Promise<Comment> => {
+    const { data } = await apiClient.post<Comment>(`/posts/${postId}/comments`, { content, parent_id: parentId ?? null })
     return data
   },
   updateComment: async (id: string, content: string): Promise<Comment> => {

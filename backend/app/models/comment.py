@@ -21,6 +21,9 @@ class Comment(Base):
     post_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("posts.id", ondelete="CASCADE"), nullable=False
     )
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
+    )
     up_votes: Mapped[int] = mapped_column(Integer, default=0)
     down_votes: Mapped[int] = mapped_column(Integer, default=0)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

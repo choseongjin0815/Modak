@@ -1,4 +1,4 @@
-import uuid
+import uuid as uuid_mod
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,21 +14,23 @@ class CommentRepository:
 
     async def create(
         self,
-        post_id: uuid.UUID,
-        user_id: uuid.UUID,
+        post_id: uuid_mod.UUID,
+        user_id: uuid_mod.UUID,
         comment_in: CommentCreate,
     ) -> Comment:
+        parent_id = uuid_mod.UUID(comment_in.parent_id) if comment_in.parent_id else None
         comment = Comment(
             content=comment_in.content,
             post_id=post_id,
             user_id=user_id,
+            parent_id=parent_id,
         )
         self.db.add(comment)
         await self.db.commit()
         await self.db.refresh(comment)
         return await self.get_by_id(comment.id)
 
-    async def get_by_id(self, comment_id: uuid.UUID) -> Comment | None:
+    async def get_by_id(self, comment_id: uuid_mod.UUID) -> Comment | None:
         result = await self.db.execute(
             select(Comment)
             .options(selectinload(Comment.user))
@@ -36,7 +38,7 @@ class CommentRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_post_id(self, post_id: uuid.UUID) -> list[Comment]:
+    async def get_by_post_id(self, post_id: uuid_mod.UUID) -> list[Comment]:
         result = await self.db.execute(
             select(Comment)
             .options(selectinload(Comment.user))

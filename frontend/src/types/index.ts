@@ -128,6 +128,7 @@ export interface Comment {
   content: string
   user_id: string
   post_id: string
+  parent_id: string | null
   created_at: string
   updated_at: string
   author: string

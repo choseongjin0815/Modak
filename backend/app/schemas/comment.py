@@ -9,7 +9,7 @@ class CommentBase(BaseModel):
 
 
 class CommentCreate(CommentBase):
-    pass
+    parent_id: str | None = None
 
 
 class CommentUpdate(BaseModel):
@@ -20,6 +20,7 @@ class CommentResponse(CommentBase):
     id: UUID
     user_id: UUID
     post_id: UUID
+    parent_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
     author: str

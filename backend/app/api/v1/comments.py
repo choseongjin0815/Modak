@@ -25,6 +25,7 @@ def build_comment_response(
         content=content,
         user_id=comment.user_id,
         post_id=comment.post_id,
+        parent_id=comment.parent_id,
         created_at=comment.created_at,
         updated_at=comment.updated_at,
         author=comment.user.username if not comment.deleted_by_admin else "삭제됨",
@@ -67,6 +68,13 @@ async def create_comment(
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다")
     if post.category_id and await ban_repo.is_banned(current_user.id, post.category_id):
         raise HTTPException(status_code=403, detail="해당 게시판에서 차단된 사용자입니다")
+    if comment_in.parent_id:
+        import uuid as _uuid
+        parent = await comment_repo.get_by_id(_uuid.UUID(comment_in.parent_id))
+        if not parent or parent.post_id != post_id:
+            raise HTTPException(status_code=400, detail="유효하지 않은 부모 댓글입니다")
+        if parent.parent_id is not None:
+            raise HTTPException(status_code=400, detail="대댓글에는 답글을 달 수 없습니다")
     comment = await comment_repo.create(post_id, current_user.id, comment_in)
     point_svc = PointService(point_repo)
     await point_svc.award_comment_created(current_user.id, post_id)

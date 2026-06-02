@@ -16,7 +16,8 @@ export const useCreateComment = (postId: string) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (content: string) => commentsApi.createComment(postId, content),
+    mutationFn: ({ content, parentId }: { content: string; parentId?: string }) =>
+      commentsApi.createComment(postId, content, parentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.comments.byPost(postId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(postId) })
