@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,6 +11,7 @@ from app.repository.notification_repository import NotificationRepository, get_n
 from app.repository.user_repository import UserRepository, get_user_repo
 
 router = APIRouter(prefix="/messages", tags=["messages"])
+logger = logging.getLogger(__name__)
 
 
 class SendMessageRequest(BaseModel):
@@ -54,6 +56,7 @@ async def send_message(
         content=f"{current_user.username}님으로부터 쪽지가 도착했습니다.",
         link="/messages",
     )
+    logger.info("쪽지 발송: %s → %s", current_user.username, receiver.username)
     return _serialize(msg, current_user.id)
 
 

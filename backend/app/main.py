@@ -1,7 +1,13 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
+from app.core.logging_config import setup_logging
+setup_logging()
+
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 # LangSmith 추적 활성화 (LANGCHAIN_TRACING_V2=true 일 때만)
 os.environ.setdefault("LANGCHAIN_TRACING_V2", settings.LANGCHAIN_TRACING_V2)
@@ -24,8 +30,11 @@ from app.models import attendance, blacklist as blacklist_model, bookmark, categ
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("서버 시작 중...")
     chatbot_service.initialize()
+    logger.info("서버 준비 완료")
     yield
+    logger.info("서버 종료")
 
 
 app = FastAPI(

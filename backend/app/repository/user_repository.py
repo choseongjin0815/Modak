@@ -1,3 +1,4 @@
+import logging
 import math
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -13,6 +14,8 @@ from app.schemas.user import UserCreate
 
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION = timedelta(days=1)
+
+logger = logging.getLogger(__name__)
 
 
 class AccountLockedException(Exception):
@@ -61,6 +64,9 @@ class UserRepository:
             if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
                 user.locked_until = now + LOCKOUT_DURATION
                 user.failed_login_attempts = 0
+                logger.warning("계정 잠금 처리: %s (5회 실패)", username)
+            else:
+                logger.debug("비밀번호 불일치: %s (%d회)", username, user.failed_login_attempts)
             self.db.add(user)
             await self.db.commit()
             return None

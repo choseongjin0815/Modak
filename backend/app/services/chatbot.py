@@ -292,7 +292,9 @@ class ChatbotService:
 
     async def ask(self, question: str, session_id: str = "") -> str:
         if self._llm_with_tools is None:
+            logger.warning("챗봇 비활성 상태에서 질문 수신 (OPENAI_API_KEY 미설정)")
             return "챗봇 서비스를 현재 이용할 수 없습니다. OPENAI_API_KEY 설정을 확인해 주세요."
+        logger.info("챗봇 질문 수신: session=%s, length=%d", session_id or "single", len(question))
         try:
             from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 
@@ -330,9 +332,11 @@ class ChatbotService:
                 new_history = [m for m in messages if not isinstance(m, SystemMessage)]
                 self._sessions[session_id] = new_history[-20:]
 
-            return messages[-1].content
+            answer = messages[-1].content
+            logger.debug("챗봇 응답 완료: session=%s, answer_length=%d", session_id or "single", len(answer))
+            return answer
         except Exception:
-            logger.exception("Chatbot ask failed")
+            logger.exception("챗봇 응답 생성 실패: session=%s", session_id or "single")
             return "답변 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
 
 
