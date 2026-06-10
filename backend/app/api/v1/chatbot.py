@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from app.services.chatbot import chatbot_service
+from app.limiter import limiter
 
 router = APIRouter(prefix="/chatbot", tags=["chatbot"])
 
@@ -16,6 +17,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/ask", response_model=ChatResponse)
-async def ask(request: ChatRequest) -> ChatResponse:
-    answer = await chatbot_service.ask(request.question, request.session_id)
+@limiter.limit("3/minute")
+async def ask(request: Request, body: ChatRequest) -> ChatResponse:
+    answer = await chatbot_service.ask(body.question, body.session_id)
     return ChatResponse(answer=answer)
