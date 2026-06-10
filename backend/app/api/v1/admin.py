@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,6 +16,7 @@ from app.schemas.report import ReportResolve
 from app.schemas.user import UserAdminResponse, UserAdminUpdate
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+logger = logging.getLogger(__name__)
 
 
 # ── 회원 관리 ──────────────────────────────────────────────
@@ -47,9 +49,9 @@ async def update_user(
     user = await user_repo.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다")
-    return await user_repo.update_by_admin(
-        user, is_active=user_in.is_active, role=user_in.role
-    )
+    updated = await user_repo.update_by_admin(user, is_active=user_in.is_active, role=user_in.role)
+    logger.info("관리자 유저 수정: %s — is_active=%s, role=%s", user.username, user_in.is_active, user_in.role)
+    return updated
 
 
 # ── 게시글 관리 ────────────────────────────────────────────
@@ -75,6 +77,7 @@ async def admin_delete_post(
     if not post:
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다")
     await post_repo.soft_delete(post, by_admin=True)
+    logger.info("관리자 게시글 삭제: post_id=%s, 작성자=%s", post_id, post.user.username)
 
 
 @router.delete("/comments/{comment_id}", status_code=204)
@@ -87,6 +90,7 @@ async def admin_delete_comment(
     if not comment:
         raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다")
     await post_repo.soft_delete_comment(comment, by_admin=True)
+    logger.info("관리자 댓글 삭제: comment_id=%s", comment_id)
 
 
 # ── 신고 관리 ──────────────────────────────────────────────
@@ -156,7 +160,9 @@ async def assign_moderator(
     try:
         await cat_mod_repo.assign(user.id, body.category_id)
     except IntegrityError:
+        logger.warning("운영자 중복 지정 시도: %s, category_id=%s", user.username, body.category_id)
         raise HTTPException(status_code=409, detail="이미 운영자로 지정된 사용자입니다")
+    logger.info("운영자 지정: %s, category_id=%s", user.username, body.category_id)
     return {"message": "운영자로 지정되었습니다"}
 
 
@@ -170,6 +176,7 @@ async def revoke_moderator(
     removed = await cat_mod_repo.revoke(user_id, category_id)
     if not removed:
         raise HTTPException(status_code=404, detail="운영자 지정을 찾을 수 없습니다")
+    logger.info("운영자 해제: user_id=%s, category_id=%s", user_id, category_id)
 
 
 # ── 신고 관리 ──────────────────────────────────────────────

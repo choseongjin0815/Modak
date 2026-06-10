@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -10,6 +11,7 @@ from app.repository.category_moderator_repository import CategoryModeratorReposi
 from app.repository.moderator_ban_repository import ModeratorBanRepository, get_moderator_ban_repo
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
+logger = logging.getLogger(__name__)
 
 DURATION_MAP: dict[str, timedelta | None] = {
     "1h":        timedelta(hours=1),
@@ -54,6 +56,10 @@ async def ban_user(
         category_id=body.category_id,
         expires_at=expires_at,
     )
+    logger.info(
+        "유저 차단: moderator=%s, banned=%s, category_id=%s, duration=%s",
+        current_user.username, body.user_id, body.category_id, body.duration,
+    )
     return {"id": str(ban.id), "expires_at": ban.expires_at.isoformat() if ban.expires_at else None}
 
 
@@ -67,6 +73,7 @@ async def unban_user(
     if not await cat_mod_repo.is_moderator(current_user.id, body.category_id):
         raise HTTPException(status_code=403, detail="해당 게시판의 운영자가 아닙니다")
     await ban_repo.unban(uuid.UUID(body.user_id), body.category_id)
+    logger.info("유저 차단 해제: moderator=%s, user_id=%s, category_id=%s", current_user.username, body.user_id, body.category_id)
 
 
 @router.get("/bans/{category_id}")

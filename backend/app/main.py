@@ -1,16 +1,26 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
+from app.core.logging_config import setup_logging
+setup_logging()
+
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 # LangSmith 추적 활성화 (LANGCHAIN_TRACING_V2=true 일 때만)
 os.environ.setdefault("LANGCHAIN_TRACING_V2", settings.LANGCHAIN_TRACING_V2)
 os.environ.setdefault("LANGCHAIN_API_KEY", settings.LANGCHAIN_API_KEY)
 os.environ.setdefault("LANGCHAIN_PROJECT", settings.LANGCHAIN_PROJECT)
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from app.limiter import limiter
 
 from app.api.v1 import admin, auth, blacklist, bookmarks, categories, chatbot, comments, files, messages, moderation, notifications, points, posts, reports, users, visits, votes
 from app.services.chatbot import chatbot_service
@@ -20,8 +30,11 @@ from app.models import attendance, blacklist as blacklist_model, bookmark, categ
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("서버 시작 중...")
     chatbot_service.initialize()
+    logger.info("서버 준비 완료")
     yield
+    logger.info("서버 종료")
 
 
 app = FastAPI(
@@ -30,6 +43,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

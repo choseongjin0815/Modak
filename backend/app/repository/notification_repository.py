@@ -1,3 +1,4 @@
+import logging
 import math
 import uuid
 
@@ -6,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import Notification
 from app.services.sse_manager import sse_manager
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationRepository:
@@ -33,6 +36,7 @@ class NotificationRepository:
             "is_read": False,
             "created_at": noti.created_at.isoformat(),
         })
+        logger.info("알림 생성: type=%s, actor=%s → user_id=%s", type, actor, user_id)
         return noti
 
     async def get_list(self, user_id: uuid.UUID, page: int = 1, size: int = 20):
