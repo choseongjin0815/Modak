@@ -25,6 +25,7 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const esRef = useRef<EventSource | null>(null)
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 초기 미읽음 수 로드
   const fetchCount = async () => {
@@ -65,8 +66,8 @@ export default function NotificationBell() {
     es.onerror = () => {
       es.close()
       esRef.current = null
-      // 5초 후 재연결 시도
-      setTimeout(() => {
+      // 5초 후 재연결 시도 (언마운트 시 cleanup에서 취소)
+      reconnectRef.current = setTimeout(() => {
         if (isAuthenticated()) connectSSE()
       }, 5_000)
     }
@@ -78,6 +79,7 @@ export default function NotificationBell() {
 
     // auth-change 이벤트 감지 (로그인/로그아웃 시 SSE 재연결)
     const handleAuthChange = () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current)
       esRef.current?.close()
       esRef.current = null
       if (isAuthenticated()) {
@@ -91,6 +93,7 @@ export default function NotificationBell() {
     window.addEventListener('auth-change', handleAuthChange)
 
     return () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current)
       esRef.current?.close()
       window.removeEventListener('auth-change', handleAuthChange)
     }

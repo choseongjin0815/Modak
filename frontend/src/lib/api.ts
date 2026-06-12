@@ -3,7 +3,6 @@ import { getToken, removeToken } from './auth'
 import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-const FILE_URL = process.env.NEXT_PUBLIC_FILE_URL || 'http://localhost:8000'
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -148,7 +147,6 @@ export const filesApi = {
   deleteFile: async (id: string): Promise<void> => {
     await apiClient.delete(`/files/${id}`)
   },
-  getFileUrl: (filename: string): string => `${FILE_URL}/files/${filename}`,
 }
 
 export const usersApi = {
