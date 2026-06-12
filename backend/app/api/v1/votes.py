@@ -3,7 +3,6 @@ import uuid
 from fastapi import APIRouter, Depends
 
 from app.security.dependencies import get_current_active_user
-from app.repository.bookmark_repository import get_bookmark_repo
 from app.repository.comment_repository import get_comment_repo
 from app.repository.point_repository import get_point_repo
 from app.repository.post_repository import get_post_repo

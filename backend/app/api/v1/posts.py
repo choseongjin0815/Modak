@@ -155,8 +155,6 @@ async def create_post(
 async def get_post(
     post_id: uuid.UUID,
     post_repo: PostRepository = Depends(get_post_repo),
-    vote_repo: VoteRepository = Depends(get_vote_repo),
-    bookmark_repo: BookmarkRepository = Depends(get_bookmark_repo),
     cat_mod_repo: CategoryModeratorRepository = Depends(get_category_mod_repo),
 ):
     post = await post_repo.get_by_id(post_id)
