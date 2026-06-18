@@ -46,4 +46,7 @@ export const queryKeys = {
   auth: {
     currentUser: ['auth', 'currentUser'] as const,
   },
+  images: {
+    quota: ['images', 'quota'] as const,
+  },
 }

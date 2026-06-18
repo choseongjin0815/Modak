@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { getToken, removeToken } from './auth'
-import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem } from '@/types'
+import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem, ImageGenerateRequest, ImageGenerateResponse, ImageQuota } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
@@ -89,6 +89,23 @@ export const postsApi = {
   },
   deletePost: async (id: string): Promise<void> => {
     await apiClient.delete(`/posts/${id}`)
+  },
+}
+
+export const imagesApi = {
+  generate: async (payload: ImageGenerateRequest): Promise<ImageGenerateResponse> => {
+    const { data } = await apiClient.post<ImageGenerateResponse>('/images/generate', payload)
+    return data
+  },
+  getQuota: async (): Promise<ImageQuota> => {
+    const { data } = await apiClient.get<ImageQuota>('/images/quota')
+    return data
+  },
+  // 미리보기 엔드포인트는 Authorization 헤더를 요구하므로 <img src>로 직접 못 부른다.
+  // apiClient로 blob을 받아 objectURL을 생성해 사용한다.
+  getPreviewObjectUrl: async (token: string): Promise<string> => {
+    const { data } = await apiClient.get(`/images/tmp/${token}`, { responseType: 'blob' })
+    return URL.createObjectURL(data as Blob)
   },
 }
 

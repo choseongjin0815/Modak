@@ -548,7 +548,7 @@ async def seed() -> None:
         print("🗑️  기존 데이터 초기화 중...")
         await db.execute(text(
             "TRUNCATE TABLE attendances, bookmarks, blacklists, reports, "
-            "post_votes, comment_votes, point_transactions, files, comments, posts, users, category_moderators, moderator_bans, messages, notifications "
+            "post_votes, comment_votes, point_transactions, files, comments, posts, users, category_moderators, moderator_bans, messages, notifications, image_generations "
             "RESTART IDENTITY CASCADE"
         ))
         await db.commit()

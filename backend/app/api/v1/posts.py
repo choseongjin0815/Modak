@@ -20,6 +20,7 @@ from app.models.user import User
 from app.schemas.category import CategoryResponse
 from app.schemas.post import FileResponse, PostCreate, PostListResult, PostResponse
 from app.services.point_service import PointService
+from app.services.image_service import is_valid_token, tmp_file_path
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -96,6 +97,43 @@ async def _save_upload_files(
             )
 
 
+async def _attach_tmp_images(
+    post_repo: PostRepository,
+    post_id: uuid.UUID,
+    user_id: uuid.UUID,
+    tokens: list[str],
+) -> None:
+    """AI 생성 임시 이미지(token)를 정식 업로드 경로로 이동 후 post에 등록한다.
+
+    token은 본인 발급분만 신뢰(`{UPLOAD_DIR}/{tmp}/{user_id}/{token}`). 유효하지 않거나
+    존재하지 않는 token은 조용히 건너뛴다(이미 사용량은 차감됨).
+    """
+    if not tokens:
+        return
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    for token in tokens:
+        token = (token or "").strip()
+        if not token or not is_valid_token(token):
+            continue
+        src_path = tmp_file_path(user_id, token)
+        if not src_path or not os.path.isfile(src_path):
+            continue
+        ext = os.path.splitext(token)[1]
+        stored_name = f"{uuid.uuid4()}{ext}"
+        dest_path = os.path.join(settings.UPLOAD_DIR, stored_name)
+        os.replace(src_path, dest_path)
+        file_size = os.path.getsize(dest_path)
+        content_type = "image/png" if ext == ".png" else f"image/{ext.lstrip('.')}"
+        await post_repo.add_file(
+            post_id=post_id,
+            filename=stored_name,
+            original_filename=f"ai-image{ext}",
+            file_path=dest_path,
+            file_size=file_size,
+            content_type=content_type,
+        )
+
+
 async def _resolve_category_id(slug: str | None, category_repo: CategoryRepository) -> int | None:
     if not slug:
         return None
@@ -132,6 +170,7 @@ async def create_post(
     content: str | None = Form(None),
     category: str | None = Form(None),
     files: list[UploadFile] = File(default=[]),
+    ai_image_tokens: list[str] = Form(default=[]),
     post_repo: PostRepository = Depends(get_post_repo),
     category_repo: CategoryRepository = Depends(get_category_repo),
     point_repo: PointRepository = Depends(get_point_repo),
@@ -145,6 +184,7 @@ async def create_post(
         PostCreate(title=title, content=content, category_id=category_id), current_user.id
     )
     await _save_upload_files(post_repo, post.id, files)
+    await _attach_tmp_images(post_repo, post.id, current_user.id, ai_image_tokens)
     point_svc = PointService(point_repo)
     await point_svc.award_post_created(current_user.id, post.id)
     post = await post_repo.get_by_id(post.id)

@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     UPLOAD_DIR: str = "uploads"
     OPENAI_API_KEY: str = ""
+    # AI 이미지 생성 (OpenAI Images API)
+    OPENAI_IMAGE_MODEL: str = "gpt-image-1.5"
+    IMAGE_GEN_LIMIT: int = 3
+    IMAGE_GEN_WINDOW_HOURS: int = 168
+    IMAGE_TMP_SUBDIR: str = "tmp"
     LANGCHAIN_TRACING_V2: str = "false"
     LANGCHAIN_API_KEY: str = ""
     LANGCHAIN_PROJECT: str = "board-chatbot"

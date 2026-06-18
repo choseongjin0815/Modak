@@ -22,11 +22,11 @@ from slowapi.errors import RateLimitExceeded
 
 from app.limiter import limiter
 
-from app.api.v1 import admin, auth, blacklist, bookmarks, categories, chatbot, comments, files, messages, moderation, notifications, points, posts, reports, users, visits, votes
+from app.api.v1 import admin, auth, blacklist, bookmarks, categories, chatbot, comments, files, images, messages, moderation, notifications, points, posts, reports, users, visits, votes
 from app.services.chatbot import chatbot_service
 
 # Ensure all models are imported for Alembic autogenerate
-from app.models import attendance, blacklist as blacklist_model, bookmark, category as category_model, category_moderator, comment, file, message, moderator_ban, notification, point, post, report as report_model, user, visit, vote as vote_model  # noqa
+from app.models import attendance, blacklist as blacklist_model, bookmark, category as category_model, category_moderator, comment, file, image_generation, message, moderator_ban, notification, point, post, report as report_model, user, visit, vote as vote_model  # noqa
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,6 +60,7 @@ app.include_router(categories.router, prefix="/api/v1")
 app.include_router(posts.router, prefix="/api/v1")
 app.include_router(comments.router, prefix="/api/v1")
 app.include_router(files.router, prefix="/api/v1")
+app.include_router(images.router, prefix="/api/v1")
 app.include_router(votes.router, prefix="/api/v1")
 app.include_router(points.router, prefix="/api/v1")
 app.include_router(bookmarks.router, prefix="/api/v1")

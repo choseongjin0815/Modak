@@ -204,3 +204,27 @@ export interface AttendanceResult {
   points_earned: number
   total_points: number
 }
+
+export type ImageSize = '1024x1024' | '1024x1536' | '1536x1024'
+
+export interface ImageGenerateRequest {
+  prompt: string
+  size?: ImageSize
+}
+
+export interface ImageGenerateResponse {
+  token: string
+  preview_url: string
+  original_filename: string
+  content_type: string
+  remaining: number
+  limit: number
+  reset_at: string | null
+}
+
+export interface ImageQuota {
+  used: number
+  remaining: number
+  limit: number
+  reset_at: string | null
+}
