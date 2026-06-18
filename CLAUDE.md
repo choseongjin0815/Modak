@@ -48,6 +48,17 @@ npx tsc --noEmit   # 타입 체크
 | [docs/chatbot.md](docs/chatbot.md) | LangChain 챗봇, tool calling, rate limiting |
 | [docs/visitor-tracking.md](docs/visitor-tracking.md) | 방문자 집계 규칙 |
 
+## 하네스: 모닥 풀스택 기능 개발
+
+**목표:** 백엔드↔프론트 경계면 정합성을 보장하며 풀스택 기능을 구현하는 에이전트 팀 운영.
+
+**트리거:** 새 기능 추가, 화면+API 동시 구현, 백엔드/프론트가 함께 바뀌는 작업 요청 시 `modak-feature-orchestrator` 스킬을 사용하라. 단순 단일 파일 수정·질문은 직접 응답 가능.
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|------|----------|------|------|
+| 2026-06-18 | 초기 구성 (planner·backend·frontend·qa 4인 팀 + 5스킬) | 전체 | - |
+
 ## 핵심 규칙 (버그 예방 — 위반 시 작업 낭비)
 
 - **JWT `sub` = username** (user_id 아님).
