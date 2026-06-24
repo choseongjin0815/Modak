@@ -5,7 +5,7 @@ from app.security.password import verify_password
 from app.models.user import User
 from app.repository.category_moderator_repository import CategoryModeratorRepository, get_category_mod_repo
 from app.repository.user_repository import UserRepository, get_user_repo
-from app.schemas.user import UserResponse, UserUpdate
+from app.schemas.user import UserDeleteRequest, UserResponse, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -48,6 +48,20 @@ async def update_my_profile(
         email=user_in.email,
         new_password=user_in.new_password,
     )
+
+
+@router.delete("/me")
+async def delete_my_account(
+    payload: UserDeleteRequest,
+    current_user: User = Depends(get_current_active_user),
+    user_repo: UserRepository = Depends(get_user_repo),
+):
+    # 비밀번호 재확인 — 실패 시 400 (401 금지: axios 인터셉터 로그인 리다이렉트 충돌 회피)
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="비밀번호가 올바르지 않습니다")
+    # 하드 삭제. 연관 데이터는 DB CASCADE/SET NULL이 처리.
+    await user_repo.delete(current_user)
+    return {"message": "회원 탈퇴가 완료되었습니다"}
 
 
 @router.get("/me/posts")

@@ -32,6 +32,10 @@ class UserUpdate(BaseModel):
     new_password: str | None = None
 
 
+class UserDeleteRequest(BaseModel):
+    password: str
+
+
 class UserAdminUpdate(BaseModel):
     is_active: bool | None = None
     role: UserRole | None = None

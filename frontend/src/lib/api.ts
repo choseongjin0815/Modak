@@ -215,6 +215,12 @@ export const usersApi = {
     const { data } = await apiClient.get('/users/me/posts', { params: { page, size } })
     return data
   },
+  // DELETE /users/me — 회원 탈퇴(하드 삭제). DELETE + JSON body는 { data }로 전송 (moderationApi.unban과 동일 패턴).
+  // 비밀번호 불일치는 400으로 내려오므로 401 인터셉터에 걸리지 않고 호출부에서 catch 가능.
+  deleteMe: async (password: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.delete<{ message: string }>('/users/me', { data: { password } })
+    return data
+  },
 }
 
 export const blacklistApi = {
