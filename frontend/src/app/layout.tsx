@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Providers from '@/components/layout/Providers'
 import Navbar from '@/components/layout/Navbar'
@@ -8,7 +8,12 @@ import ChatBot from '@/components/ChatBot'
 export const metadata: Metadata = {
   title: '모닥',
   description: '모닥 - 관심사로 모이는 커뮤니티',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({

@@ -8,7 +8,7 @@
 |------|------|
 | Backend | Python 3.13, FastAPI, SQLAlchemy 2.0 (async), PostgreSQL, Alembic |
 | Frontend | Next.js 14 (App Router), TypeScript, TanStack Query v5, Tailwind CSS |
-| AI | LangChain, ChromaDB, OpenAI GPT-4o-mini |
+| AI | LangChain, ChromaDB, OpenAI GPT-4o-mini (챗봇), GPT image 1.5 (이미지 생성) |
 | 실시간 | SSE (Server-Sent Events) |
 | 모니터링 | LangSmith |
 
@@ -16,6 +16,7 @@
 
 **게시판**
 - 게시글 작성·수정·삭제, 파일 첨부, 카테고리 분류
+- AI 이미지 생성 — 작성 시 GPT image 1.5로 원하는 주제의 이미지를 만들어 첨부 (유저당 롤링 7일 3회 제한)
 - 검색·정렬(최신·조회수·추천순)·페이지네이션
 - 댓글·대댓글(1단계), 추천/비추천
 - 순추천 100+ 시 HOT 게시글 표시
@@ -107,8 +108,10 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=3600
 UPLOAD_DIR=uploads
 
-# 챗봇 (선택 — 없으면 챗봇만 비활성화, 서버는 정상 기동)
+# OpenAI (선택 — 없으면 챗봇·AI 이미지 생성만 비활성화, 서버는 정상 기동)
 OPENAI_API_KEY=sk-...
+OPENAI_IMAGE_MODEL=gpt-image-1.5   # AI 이미지 생성 모델 (기본 gpt-image-1.5)
+# 이미지 생성 제한: 기본 7일(168h) 동안 3회 — config.py의 IMAGE_GEN_LIMIT / IMAGE_GEN_WINDOW_HOURS로 조정
 
 # LangSmith 모니터링 (선택)
 LANGCHAIN_TRACING_V2=true

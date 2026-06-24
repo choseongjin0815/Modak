@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { getToken, removeToken } from './auth'
-import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem } from '@/types'
+import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem, ImageGenerateRequest, ImageGenerateResponse, ImageQuota, NoticeListItem, NoticeListResult, NoticeResponse, NoticeCreate, NoticeUpdate } from '@/types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -89,6 +89,54 @@ export const postsApi = {
   },
   deletePost: async (id: string): Promise<void> => {
     await apiClient.delete(`/posts/${id}`)
+  },
+}
+
+export const noticesApi = {
+  getNotices: async (params: { page?: number; size?: number; search?: string } = {}): Promise<NoticeListResult> => {
+    const query: Record<string, string | number> = {}
+    if (params.page) query.page = params.page
+    if (params.size) query.size = params.size
+    if (params.search) query.search = params.search
+    const { data } = await apiClient.get<NoticeListResult>('/notices', { params: query })
+    return data
+  },
+  // GET /notices/pinned 는 래핑 없이 NoticeListItem[] 배열을 직접 반환한다.
+  getPinned: async (limit = 3): Promise<NoticeListItem[]> => {
+    const { data } = await apiClient.get<NoticeListItem[]>('/notices/pinned', { params: { limit } })
+    return data
+  },
+  getNotice: async (id: string): Promise<NoticeResponse> => {
+    const { data } = await apiClient.get<NoticeResponse>(`/notices/${id}`)
+    return data
+  },
+  createNotice: async (payload: NoticeCreate): Promise<NoticeResponse> => {
+    const { data } = await apiClient.post<NoticeResponse>('/notices', payload)
+    return data
+  },
+  updateNotice: async (id: string, payload: NoticeUpdate): Promise<NoticeResponse> => {
+    const { data } = await apiClient.put<NoticeResponse>(`/notices/${id}`, payload)
+    return data
+  },
+  deleteNotice: async (id: string): Promise<void> => {
+    await apiClient.delete(`/notices/${id}`)
+  },
+}
+
+export const imagesApi = {
+  generate: async (payload: ImageGenerateRequest): Promise<ImageGenerateResponse> => {
+    const { data } = await apiClient.post<ImageGenerateResponse>('/images/generate', payload)
+    return data
+  },
+  getQuota: async (): Promise<ImageQuota> => {
+    const { data } = await apiClient.get<ImageQuota>('/images/quota')
+    return data
+  },
+  // 미리보기 엔드포인트는 Authorization 헤더를 요구하므로 <img src>로 직접 못 부른다.
+  // apiClient로 blob을 받아 objectURL을 생성해 사용한다.
+  getPreviewObjectUrl: async (token: string): Promise<string> => {
+    const { data } = await apiClient.get(`/images/tmp/${token}`, { responseType: 'blob' })
+    return URL.createObjectURL(data as Blob)
   },
 }
 

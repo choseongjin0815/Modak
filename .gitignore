@@ -1,5 +1,6 @@
 # Claude
 .claude/
+_workspace*/
 
 # Python
 __pycache__/

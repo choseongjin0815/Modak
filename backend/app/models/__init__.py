@@ -8,6 +8,7 @@ from app.models.attendance import Attendance
 from app.models.bookmark import Bookmark
 from app.models.blacklist import Blacklist
 from app.models.report import Report, ReportTargetType, ReportStatus
+from app.models.notice import Notice
 
 __all__ = [
     "User", "UserRole",
@@ -17,4 +18,5 @@ __all__ = [
     "Attendance", "Bookmark",
     "Blacklist",
     "Report", "ReportTargetType", "ReportStatus",
+    "Notice",
 ]
