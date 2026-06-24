@@ -22,11 +22,11 @@ from slowapi.errors import RateLimitExceeded
 
 from app.limiter import limiter
 
-from app.api.v1 import admin, auth, blacklist, bookmarks, categories, chatbot, comments, files, images, messages, moderation, notifications, points, posts, reports, users, visits, votes
+from app.api.v1 import admin, auth, blacklist, bookmarks, categories, chatbot, comments, files, images, messages, moderation, notices, notifications, points, posts, reports, users, visits, votes
 from app.services.chatbot import chatbot_service
 
 # Ensure all models are imported for Alembic autogenerate
-from app.models import attendance, blacklist as blacklist_model, bookmark, category as category_model, category_moderator, comment, file, image_generation, message, moderator_ban, notification, point, post, report as report_model, user, visit, vote as vote_model  # noqa
+from app.models import attendance, blacklist as blacklist_model, bookmark, category as category_model, category_moderator, comment, file, image_generation, message, moderator_ban, notice, notification, point, post, report as report_model, user, visit, vote as vote_model  # noqa
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,7 +49,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000", "http://127.0.0.1:3000",
+        "http://localhost:3001", "http://127.0.0.1:3001",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -71,6 +74,7 @@ app.include_router(visits.router, prefix="/api/v1")
 app.include_router(messages.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(moderation.router, prefix="/api/v1")
+app.include_router(notices.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(chatbot.router, prefix="/api/v1")
 

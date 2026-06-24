@@ -49,4 +49,12 @@ export const queryKeys = {
   images: {
     quota: ['images', 'quota'] as const,
   },
+  notices: {
+    all: ['notices'] as const,
+    lists: () => [...queryKeys.notices.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.notices.lists(), filters] as const,
+    pinned: (limit: number) => [...queryKeys.notices.all, 'pinned', limit] as const,
+    details: () => [...queryKeys.notices.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.notices.details(), id] as const,
+  },
 }

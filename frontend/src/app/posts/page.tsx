@@ -10,6 +10,7 @@ import PostCard from '@/components/posts/PostCard'
 import SearchBar from '@/components/posts/SearchBar'
 import SortControls from '@/components/posts/SortControls'
 import Pagination from '@/components/posts/Pagination'
+import PinnedNotices from '@/components/notices/PinnedNotices'
 import { type PostFilters } from '@/types'
 import { useCategories } from '@/hooks/useCategories'
 
@@ -58,6 +59,8 @@ export default function PostsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <PinnedNotices limit={3} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{pageTitle}</h1>

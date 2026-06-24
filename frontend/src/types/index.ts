@@ -205,6 +205,47 @@ export interface AttendanceResult {
   total_points: number
 }
 
+export interface NoticeListItem {
+  id: string
+  title: string
+  is_pinned: boolean
+  view_count: number
+  author: string | null
+  created_at: string
+}
+
+export interface NoticeResponse {
+  id: string
+  title: string
+  content: string
+  is_pinned: boolean
+  view_count: number
+  author_id: string | null
+  author: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NoticeListResult {
+  items: NoticeListItem[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
+export interface NoticeCreate {
+  title: string
+  content: string
+  is_pinned?: boolean
+}
+
+export interface NoticeUpdate {
+  title?: string
+  content?: string
+  is_pinned?: boolean
+}
+
 export type ImageSize = '1024x1024' | '1024x1536' | '1536x1024'
 
 export interface ImageGenerateRequest {

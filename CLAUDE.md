@@ -58,6 +58,8 @@ npx tsc --noEmit   # 타입 체크
 | 날짜 | 변경 내용 | 대상 | 사유 |
 |------|----------|------|------|
 | 2026-06-18 | 초기 구성 (planner·backend·frontend·qa 4인 팀 + 5스킬) | 전체 | - |
+| 2026-06-24 | 기동 전 `pip install -r requirements.txt` 의존성 동기화 단계 추가 | skills/backend-feature | venv slowapi 미설치로 uvicorn 기동 반복 실패 |
+| 2026-06-24 | `_workspace/` → `_workspace*/`로 gitignore 확장 | .gitignore | 보관본(`_workspace_prev` 등)도 추적 제외 |
 
 ## 핵심 규칙 (버그 예방 — 위반 시 작업 낭비)
 

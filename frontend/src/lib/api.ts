@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { getToken, removeToken } from './auth'
-import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem, ImageGenerateRequest, ImageGenerateResponse, ImageQuota } from '@/types'
+import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem, ImageGenerateRequest, ImageGenerateResponse, ImageQuota, NoticeListItem, NoticeListResult, NoticeResponse, NoticeCreate, NoticeUpdate } from '@/types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -89,6 +89,37 @@ export const postsApi = {
   },
   deletePost: async (id: string): Promise<void> => {
     await apiClient.delete(`/posts/${id}`)
+  },
+}
+
+export const noticesApi = {
+  getNotices: async (params: { page?: number; size?: number; search?: string } = {}): Promise<NoticeListResult> => {
+    const query: Record<string, string | number> = {}
+    if (params.page) query.page = params.page
+    if (params.size) query.size = params.size
+    if (params.search) query.search = params.search
+    const { data } = await apiClient.get<NoticeListResult>('/notices', { params: query })
+    return data
+  },
+  // GET /notices/pinned 는 래핑 없이 NoticeListItem[] 배열을 직접 반환한다.
+  getPinned: async (limit = 3): Promise<NoticeListItem[]> => {
+    const { data } = await apiClient.get<NoticeListItem[]>('/notices/pinned', { params: { limit } })
+    return data
+  },
+  getNotice: async (id: string): Promise<NoticeResponse> => {
+    const { data } = await apiClient.get<NoticeResponse>(`/notices/${id}`)
+    return data
+  },
+  createNotice: async (payload: NoticeCreate): Promise<NoticeResponse> => {
+    const { data } = await apiClient.post<NoticeResponse>('/notices', payload)
+    return data
+  },
+  updateNotice: async (id: string, payload: NoticeUpdate): Promise<NoticeResponse> => {
+    const { data } = await apiClient.put<NoticeResponse>(`/notices/${id}`, payload)
+    return data
+  },
+  deleteNotice: async (id: string): Promise<void> => {
+    await apiClient.delete(`/notices/${id}`)
   },
 }
 

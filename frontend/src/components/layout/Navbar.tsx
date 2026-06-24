@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, User, Menu, X, ChevronDown, Flame, Star, Calendar, Shield, Settings, Mail } from 'lucide-react'
+import { LogOut, User, Menu, X, ChevronDown, Flame, Star, Calendar, Shield, Settings, Mail, Megaphone } from 'lucide-react'
 import { getUser, isAuthenticated, isAdmin as checkIsAdmin, removeToken } from '@/lib/auth'
 import { useMyPoints, useAttendance } from '@/hooks/usePoints'
 import { useSortedCategoryGroups } from '@/hooks/useCategories'
@@ -104,6 +104,11 @@ export default function Navbar() {
               인기글
             </Link>
 
+            <Link href="/notices" className="flex items-center gap-1 px-2.5 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors whitespace-nowrap">
+              <Megaphone className="w-4 h-4" />
+              공지사항
+            </Link>
+
             {sortedGroups.map((group, idx) => (
               <div
                 key={group.key}
@@ -191,6 +196,11 @@ export default function Navbar() {
           <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-md transition-colors">
             <Flame className="w-4 h-4" />
             인기글
+          </Link>
+
+          <Link href="/notices" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-orange-50 rounded-md transition-colors">
+            <Megaphone className="w-4 h-4" />
+            공지사항
           </Link>
 
           {sortedGroups.map((group) => (

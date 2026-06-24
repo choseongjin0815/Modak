@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Shield, Users, FileText, Flag, ShieldOff, ShieldCheck } from 'lucide-react'
+import { Shield, Users, FileText, Flag, ShieldOff, ShieldCheck, Megaphone } from 'lucide-react'
 import { isAuthenticated, getUser } from '@/lib/auth'
 
 const navItems = [
   { href: '/admin/users', label: '회원 관리', icon: Users },
   { href: '/admin/posts', label: '게시글 관리', icon: FileText },
+  { href: '/admin/notices', label: '공지 관리', icon: Megaphone },
   { href: '/admin/reports', label: '신고 관리', icon: Flag },
   { href: '/admin/moderators', label: '운영자 관리', icon: ShieldCheck },
 ]

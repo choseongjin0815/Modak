@@ -17,6 +17,7 @@ from sqlalchemy import select, text
 from app.security.password import get_password_hash
 from app.database import AsyncSessionLocal
 from app.models.category import Category as CategoryModel
+from app.models.notice import Notice
 from app.models.post import Post
 from app.models.user import User, UserRole
 
@@ -548,7 +549,7 @@ async def seed() -> None:
         print("🗑️  기존 데이터 초기화 중...")
         await db.execute(text(
             "TRUNCATE TABLE attendances, bookmarks, blacklists, reports, "
-            "post_votes, comment_votes, point_transactions, files, comments, posts, users, category_moderators, moderator_bans, messages, notifications, image_generations "
+            "post_votes, comment_votes, point_transactions, files, comments, posts, users, category_moderators, moderator_bans, messages, notifications, image_generations, notices "
             "RESTART IDENTITY CASCADE"
         ))
         await db.commit()
@@ -580,7 +581,42 @@ async def seed() -> None:
         )
         db.add(admin)
         await db.commit()
+        await db.refresh(admin)
         print("   아이디: admin / 비밀번호: Admin1234!")
+
+        # ── 공지사항 시드 ────────────────────────────────────
+        print("📢 공지사항 시드 생성 중...")
+        notice_specs = [
+            ("[필독] 모닥 커뮤니티 이용 가이드 🏕️",
+             "모닥에 오신 것을 환영합니다!\n\n관심사로 모이는 종합 커뮤니티에서 즐거운 시간 보내세요.\n게시판 이용 규칙과 매너를 지켜주시면 모두가 행복한 공간이 됩니다.\n\n- 서로 존중하는 댓글 문화\n- 광고/도배 금지\n- 저작권 준수\n\n문의는 챗봇 또는 운영자에게 쪽지로 남겨주세요.",
+             True),
+            ("[점검] 정기 서버 점검 안내 (매주 화요일 새벽)",
+             "안정적인 서비스 제공을 위해 매주 화요일 새벽 2시~4시 정기 점검을 진행합니다.\n\n점검 시간 동안 일부 기능 이용이 제한될 수 있습니다.\n이용에 참고 부탁드립니다. 🙏",
+             True),
+            ("신규 기능: AI 이미지 생성 게시글 작성 🎨",
+             "이제 게시글 작성 시 AI 이미지를 생성해 첨부할 수 있습니다.\n\n작성 화면에서 프롬프트를 입력하면 이미지가 생성됩니다. 많은 이용 바랍니다!",
+             False),
+            ("커뮤니티 운영자(모더레이터) 모집 안내",
+             "카테고리별 운영자를 모집합니다.\n\n관심 있는 분은 운영진에게 쪽지로 신청해주세요.\n활동 내역과 매너 점수를 참고하여 선발합니다.",
+             False),
+            ("포인트/출석 이벤트 정책 변경 안내",
+             "출석 체크 및 게시글 작성 포인트 정책이 일부 변경되었습니다.\n\n자세한 내용은 마이페이지에서 확인하실 수 있습니다.",
+             False),
+        ]
+        base_time = datetime.now(timezone.utc)
+        for idx, (title, content, pinned) in enumerate(notice_specs):
+            created = base_time - timedelta(days=idx)
+            db.add(Notice(
+                title=title,
+                content=content,
+                is_pinned=pinned,
+                author_id=admin.id,
+                view_count=random.randint(50, 5_000),
+                created_at=created,
+                updated_at=created,
+            ))
+        await db.commit()
+        print(f"✅ 공지사항 {len(notice_specs)}건 생성 (고정 {sum(1 for s in notice_specs if s[2])}건)")
 
         # 기존 유저 로드 (user01~user100)
         existing_users_result = await db.execute(
