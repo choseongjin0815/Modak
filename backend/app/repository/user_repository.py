@@ -96,6 +96,12 @@ class UserRepository:
         await self.db.refresh(user)
         return user
 
+    async def delete(self, user: User) -> None:
+        # 연관 데이터는 DB의 ON DELETE CASCADE / SET NULL 제약이 처리한다.
+        # commit 이후 user 객체의 lazy 관계 접근 금지 (MissingGreenlet).
+        await self.db.delete(user)
+        await self.db.commit()
+
     async def update_by_admin(
         self,
         user: User,

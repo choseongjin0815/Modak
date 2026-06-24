@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { User, Mail, Lock, Save, Loader2, FileText, Star, Shield, Trash2, ShieldCheck, ChevronDown, ChevronUp, ShieldOff } from 'lucide-react'
+import { User, Mail, Lock, Save, Loader2, FileText, Star, Shield, Trash2, ShieldCheck, ChevronDown, ChevronUp, ShieldOff, AlertTriangle } from 'lucide-react'
 import { usersApi, blacklistApi, moderationApi } from '@/lib/api'
 import { isAuthenticated } from '@/lib/auth'
+import WithdrawModal from '@/components/ui/WithdrawModal'
 import type { User as UserType, BlacklistItem, ModeratedCategory, ModeratorBanInfo } from '@/types'
 
 export default function MyPage() {
@@ -34,6 +35,7 @@ export default function MyPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -216,8 +218,30 @@ export default function MyPage() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             저장
           </button>
+
+          {/* 위험 영역: 회원 탈퇴 */}
+          <div className="border-t border-red-100 pt-5 mt-1">
+            <div className="flex items-start gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-red-600">회원 탈퇴</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  탈퇴하면 작성한 게시글·댓글·쪽지가 영구 삭제되며 복구할 수 없습니다.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setWithdrawOpen(true)}
+              className="w-full py-2 rounded-lg text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" />
+              회원 탈퇴
+            </button>
+          </div>
         </div>
       )}
+
+      {withdrawOpen && <WithdrawModal onClose={() => setWithdrawOpen(false)} />}
 
       {/* 내 게시글 탭 */}
       {activeTab === 'posts' && (
