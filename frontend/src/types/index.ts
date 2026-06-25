@@ -259,6 +259,12 @@ export interface NoticeUpdate {
   is_pinned?: boolean
 }
 
+export interface UserStats {
+  post_count: number
+  comment_count: number
+  today_votes_received: number
+}
+
 export type ImageSize = '1024x1024' | '1024x1536' | '1536x1024'
 
 export interface ImageGenerateRequest {

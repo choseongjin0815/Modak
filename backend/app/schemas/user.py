@@ -49,6 +49,12 @@ class UserNicknameUpdate(BaseModel):
     nickname: str
 
 
+class UserStatsResponse(BaseModel):
+    post_count: int
+    comment_count: int
+    today_votes_received: int
+
+
 class UserDeleteRequest(BaseModel):
     password: str
 

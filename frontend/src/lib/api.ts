@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { getToken, removeToken } from './auth'
-import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem, ImageGenerateRequest, ImageGenerateResponse, ImageQuota, NoticeListItem, NoticeListResult, NoticeResponse, NoticeCreate, NoticeUpdate } from '@/types'
+import type { Token, Post, PostListResult, Comment, PostFilters, User, UserAdminItem, VoteResult, PointInfo, AttendanceResult, Report, ReportTargetType, ReportStatus, BlacklistItem, CategoryItem, ImageGenerateRequest, ImageGenerateResponse, ImageQuota, NoticeListItem, NoticeListResult, NoticeResponse, NoticeCreate, NoticeUpdate, UserStats } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
 
@@ -220,6 +220,10 @@ export const usersApi = {
   // 비밀번호 불일치는 400으로 내려오므로 401 인터셉터에 걸리지 않고 호출부에서 catch 가능.
   deleteMe: async (password: string): Promise<{ message: string }> => {
     const { data } = await apiClient.delete<{ message: string }>('/users/me', { data: { password } })
+    return data
+  },
+  getMyStats: async (): Promise<UserStats> => {
+    const { data } = await apiClient.get<UserStats>('/users/me/stats')
     return data
   },
 }

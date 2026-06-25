@@ -7,13 +7,21 @@ from app.security.password import verify_password
 from app.models.user import User
 from app.repository.category_moderator_repository import CategoryModeratorRepository, get_category_mod_repo
 from app.repository.user_repository import UserRepository, get_user_repo
-from app.schemas.user import UserDeleteRequest, UserResponse, UserUpdate
+from app.schemas.user import UserDeleteRequest, UserResponse, UserStatsResponse, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 NICKNAME_CHANGE_INTERVAL = timedelta(days=30)
 NICKNAME_MIN_LEN = 2
 NICKNAME_MAX_LEN = 20
+
+
+@router.get("/me/stats", response_model=UserStatsResponse)
+async def get_my_stats(
+    current_user: User = Depends(get_current_active_user),
+    user_repo: UserRepository = Depends(get_user_repo),
+):
+    return await user_repo.get_my_stats(current_user.id)
 
 
 @router.get("/me", response_model=UserResponse)

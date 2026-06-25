@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { User, Mail, Lock, Save, Loader2, FileText, Star, Shield, Trash2, ShieldCheck, ChevronDown, ChevronUp, ShieldOff, AlertTriangle, Smile } from 'lucide-react'
+import { User, Mail, Lock, Save, Loader2, FileText, MessageSquare, Star, Shield, Trash2, ShieldCheck, ChevronDown, ChevronUp, ShieldOff, AlertTriangle, Smile, ThumbsUp } from 'lucide-react'
 import { usersApi, blacklistApi, moderationApi } from '@/lib/api'
 import { isAuthenticated } from '@/lib/auth'
 import { daysUntilNicknameChange, nextNicknameChangeDate } from '@/hooks/useNickname'
 import WithdrawModal from '@/components/ui/WithdrawModal'
-import type { User as UserType, BlacklistItem, ModeratedCategory, ModeratorBanInfo } from '@/types'
+import type { User as UserType, BlacklistItem, ModeratedCategory, ModeratorBanInfo, UserStats } from '@/types'
 
 export default function MyPage() {
   const router = useRouter()
@@ -26,6 +26,7 @@ export default function MyPage() {
   const [bansMap, setBansMap] = useState<Record<number, ModeratorBanInfo[]>>({})
   const [bansLoading, setBansLoading] = useState<Record<number, boolean>>({})
   const [activeTab, setActiveTab] = useState<'profile' | 'posts' | 'blacklist' | 'moderation'>('profile')
+  const [stats, setStats] = useState<UserStats | null>(null)
 
   // 프로필 수정 폼
   const [username, setUsername] = useState('')
@@ -90,8 +91,9 @@ export default function MyPage() {
 
   const loadProfile = async () => {
     try {
-      const u = await usersApi.getMe()
+      const [u, s] = await Promise.all([usersApi.getMe(), usersApi.getMyStats()])
       setUser(u)
+      setStats(s)
       setUsername(u.username)
       setNickname(u.nickname)
       setEmail(u.email)
@@ -165,7 +167,7 @@ export default function MyPage() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">{user.nickname}</h1>
             <p className="text-sm text-gray-500">@{user.username} · {user.email}</p>
-            <div className="flex items-center gap-3 mt-1">
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="flex items-center gap-1 text-xs text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">
                 <Star className="w-3 h-3" />{user.points.toLocaleString()}P
               </span>
@@ -173,6 +175,19 @@ export default function MyPage() {
                 <span className="flex items-center gap-1 text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
                   <Shield className="w-3 h-3" />관리자
                 </span>
+              )}
+              {stats && (
+                <>
+                  <span className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <FileText className="w-3 h-3" />게시글 {stats.post_count.toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <MessageSquare className="w-3 h-3" />댓글 {stats.comment_count.toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                    <ThumbsUp className="w-3 h-3" />오늘 추천 {stats.today_votes_received}
+                  </span>
+                </>
               )}
             </div>
           </div>
