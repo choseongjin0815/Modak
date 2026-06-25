@@ -80,7 +80,7 @@ export default function AdminPostsPage() {
                 <Link href={`/posts/${post.id}`} target="_blank"
                   className="font-medium text-gray-900 hover:text-blue-600 truncate block">{post.title}</Link>
                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                  <span>{post.author}</span>
+                  <span>{post.author_nickname ?? post.author}</span>
                   <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{post.view_count.toLocaleString()}</span>
                   <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{post.comment_count}</span>
                   <span>{format(new Date(post.created_at), 'yy.MM.dd', { locale: ko })}</span>

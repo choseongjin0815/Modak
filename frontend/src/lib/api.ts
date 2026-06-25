@@ -204,6 +204,7 @@ export const usersApi = {
   },
   updateMe: async (payload: {
     username?: string
+    nickname?: string
     email?: string
     current_password?: string
     new_password?: string

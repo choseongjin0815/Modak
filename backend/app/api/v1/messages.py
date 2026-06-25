@@ -26,12 +26,15 @@ def _serialize(msg, viewer_id: uuid.UUID) -> dict:
         "id": str(msg.id),
         "sender_id": str(msg.sender_id),
         "sender_username": msg.sender.username,
+        "sender_nickname": msg.sender.nickname if msg.sender else "알 수 없음",
         "receiver_id": str(msg.receiver_id),
         "receiver_username": msg.receiver.username if msg.receiver else "알 수 없음",
+        "receiver_nickname": msg.receiver.nickname if msg.receiver else "알 수 없음",
         "content": msg.content,
         "is_read": msg.is_read,
         "created_at": msg.created_at.isoformat(),
         "other_username": other.username if other else "알 수 없음",
+        "other_nickname": other.nickname if other else "알 수 없음",
     }
 
 
@@ -53,7 +56,7 @@ async def send_message(
         user_id=receiver.id,
         type="new_message",
         actor=current_user.username,
-        content=f"{current_user.username}님으로부터 쪽지가 도착했습니다.",
+        content=f"{current_user.nickname}님으로부터 쪽지가 도착했습니다.",
         link="/messages",
     )
     logger.info("쪽지 발송: %s → %s", current_user.username, receiver.username)

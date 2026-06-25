@@ -59,11 +59,12 @@ async def notification_stream(
     )
 
 
-def _serialize(n) -> dict:
+def _serialize(n, actor_nickname: str | None = None) -> dict:
     return {
         "id": str(n.id),
         "type": n.type,
         "actor": n.actor,
+        "actor_nickname": actor_nickname or n.actor,
         "content": n.content,
         "link": n.link,
         "is_read": n.is_read,
@@ -80,7 +81,7 @@ async def list_notifications(
 ):
     items, total, pages = await noti_repo.get_list(current_user.id, page, size)
     return {
-        "items": [_serialize(n) for n in items],
+        "items": [_serialize(row.Notification, row.actor_nickname) for row in items],
         "total": total, "page": page, "size": size, "pages": pages,
     }
 

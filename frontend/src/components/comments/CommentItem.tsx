@@ -87,11 +87,13 @@ export default function CommentItem({ comment, replies = [], postId, currentUser
     }
   }
 
+  const displayName = comment.author_nickname ?? comment.author
+
   const handleBlock = async () => {
-    if (!window.confirm(`${comment.author} 님을 차단하시겠습니까?`)) return
+    if (!window.confirm(`${displayName} 님을 차단하시겠습니까?`)) return
     try {
-      const result = await blacklistApi.add(comment.user_id)
-      alert(`${result.blocked_username} 님을 차단했습니다.`)
+      await blacklistApi.add(comment.user_id)
+      alert(`${displayName} 님을 차단했습니다.`)
     } catch (e: any) {
       alert(e.response?.data?.detail || '차단 처리 중 오류가 발생했습니다')
     }
@@ -123,10 +125,10 @@ export default function CommentItem({ comment, replies = [], postId, currentUser
       {showBanModal && categoryId && (
         <BanModal
           targetUserId={comment.user_id}
-          targetUsername={comment.author}
+          targetDisplayName={displayName}
           categoryId={categoryId}
           onClose={() => setShowBanModal(false)}
-          onDone={() => { setShowBanModal(false); alert(`${comment.author} 님을 차단했습니다.`) }}
+          onDone={() => { setShowBanModal(false); alert(`${displayName} 님을 차단했습니다.`) }}
         />
       )}
       <div className="flex items-start justify-between gap-3">
@@ -138,7 +140,7 @@ export default function CommentItem({ comment, replies = [], postId, currentUser
             <span className="flex items-center gap-1.5 text-sm font-medium text-gray-900 flex-wrap">
               <LevelBadge points={comment.author_points} />
               <AuthorBadge role={comment.author_role} isMod={comment.author_is_mod} />
-              {comment.author}
+              {displayName}
             </span>
             <div className="flex items-center gap-1 text-xs text-gray-400">
               <span>{formattedDate}</span>
@@ -237,7 +239,7 @@ export default function CommentItem({ comment, replies = [], postId, currentUser
           <CommentForm
             postId={postId}
             parentId={comment.id}
-            replyTo={comment.author}
+            replyTo={displayName}
             onCancel={() => setShowReplyForm(false)}
           />
         </div>

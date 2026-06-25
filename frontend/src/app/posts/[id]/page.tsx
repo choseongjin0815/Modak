@@ -116,10 +116,11 @@ export default function PostDetailPage() {
 
   const handleBlock = async () => {
     if (!auth || !post) return
-    if (!window.confirm(`${post.author} 님을 차단하시겠습니까?\n차단 시 해당 유저는 내 게시글을 볼 수 없게 됩니다.`)) return
+    const displayName = post.author_nickname ?? post.author
+    if (!window.confirm(`${displayName} 님을 차단하시겠습니까?\n차단 시 해당 유저는 내 게시글을 볼 수 없게 됩니다.`)) return
     try {
-      const result = await blacklistApi.add(post.user_id)
-      alert(`${result.blocked_username} 님을 차단했습니다.`)
+      await blacklistApi.add(post.user_id)
+      alert(`${displayName} 님을 차단했습니다.`)
     } catch (e: any) {
       alert(e.response?.data?.detail || '차단 처리 중 오류가 발생했습니다')
     }
@@ -188,10 +189,10 @@ export default function PostDetailPage() {
       {showBanModal && post?.category && (
         <BanModal
           targetUserId={post.user_id}
-          targetUsername={post.author}
+          targetDisplayName={post.author_nickname ?? post.author}
           categoryId={post.category.id}
           onClose={() => setShowBanModal(false)}
-          onDone={() => { setShowBanModal(false); alert(`${post.author} 님을 게시판에서 차단했습니다.`) }}
+          onDone={() => { setShowBanModal(false); alert(`${post.author_nickname ?? post.author} 님을 게시판에서 차단했습니다.`) }}
         />
       )}
       <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
@@ -238,7 +239,7 @@ export default function PostDetailPage() {
               <User className="w-3.5 h-3.5" />
               <LevelBadge points={post.author_points} />
               <AuthorBadge role={post.author_role} isMod={post.author_is_mod} />
-              {post.author}
+              {post.author_nickname ?? post.author}
             </span>
             <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{formattedDate}{isEdited && <span className="text-xs">(수정됨)</span>}</span>
             <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" />조회 {post.view_count.toLocaleString()}</span>

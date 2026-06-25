@@ -15,13 +15,14 @@ const DURATION_OPTIONS = [
 
 interface BanModalProps {
   targetUserId: string
-  targetUsername: string
+  /** 화면 표시용 이름(닉네임). 차단 처리는 targetUserId로만 수행한다. */
+  targetDisplayName: string
   categoryId: number
   onClose: () => void
   onDone: () => void
 }
 
-export default function BanModal({ targetUserId, targetUsername, categoryId, onClose, onDone }: BanModalProps) {
+export default function BanModal({ targetUserId, targetDisplayName, categoryId, onClose, onDone }: BanModalProps) {
   const [selected, setSelected] = useState('24h')
   const [loading, setLoading] = useState(false)
 
@@ -51,7 +52,7 @@ export default function BanModal({ targetUserId, targetUsername, categoryId, onC
           </div>
           <h2 className="mt-3 text-base font-bold text-red-900">게시판 차단</h2>
           <p className="mt-1 text-sm text-red-700">
-            <span className="font-semibold">{targetUsername}</span> 님을 이 게시판에서 차단합니다.
+            <span className="font-semibold">{targetDisplayName}</span> 님을 이 게시판에서 차단합니다.
           </p>
         </div>
 

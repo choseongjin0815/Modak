@@ -63,7 +63,11 @@ class ModeratorBanRepository:
     async def get_bans_by_category(self, category_id: int) -> list:
         now = datetime.now(timezone.utc)
         result = await self.db.execute(
-            select(ModeratorBan, User.username.label("banned_username"))
+            select(
+                ModeratorBan,
+                User.username.label("banned_username"),
+                User.nickname.label("banned_nickname"),
+            )
             .join(User, ModeratorBan.banned_user_id == User.id)
             .where(
                 ModeratorBan.category_id == category_id,

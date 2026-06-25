@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { User, Mail, Lock, Save, Loader2, FileText, Star, Shield, Trash2, ShieldCheck, ChevronDown, ChevronUp, ShieldOff, AlertTriangle } from 'lucide-react'
+import { User, Mail, Lock, Save, Loader2, FileText, Star, Shield, Trash2, ShieldCheck, ChevronDown, ChevronUp, ShieldOff, AlertTriangle, Smile } from 'lucide-react'
 import { usersApi, blacklistApi, moderationApi } from '@/lib/api'
 import { isAuthenticated } from '@/lib/auth'
+import { daysUntilNicknameChange, nextNicknameChangeDate } from '@/hooks/useNickname'
 import WithdrawModal from '@/components/ui/WithdrawModal'
 import type { User as UserType, BlacklistItem, ModeratedCategory, ModeratorBanInfo } from '@/types'
 
@@ -28,6 +29,7 @@ export default function MyPage() {
 
   // 프로필 수정 폼
   const [username, setUsername] = useState('')
+  const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw] = useState('')
@@ -36,6 +38,11 @@ export default function MyPage() {
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
+
+  // 닉네임 30일 변경 제한 계산 (nickname_changed_at 기준)
+  const daysUntilChange = daysUntilNicknameChange(user?.nickname_changed_at ?? null)
+  const nicknameChangeAllowed = daysUntilChange === 0
+  const nextChangeDate = nextNicknameChangeDate(user?.nickname_changed_at ?? null)
 
   useEffect(() => {
     setMounted(true)
@@ -86,6 +93,7 @@ export default function MyPage() {
       const u = await usersApi.getMe()
       setUser(u)
       setUsername(u.username)
+      setNickname(u.nickname)
       setEmail(u.email)
     } catch { router.push('/login') }
   }
@@ -107,14 +115,26 @@ export default function MyPage() {
     setSaveSuccess(false)
     if (newPw && newPw !== confirmPw) { setSaveError('새 비밀번호가 일치하지 않습니다'); return }
     if (newPw && newPw.length < 6) { setSaveError('비밀번호는 6자 이상이어야 합니다'); return }
+    const trimmedNickname = nickname.trim()
+    const nicknameChanged = trimmedNickname !== user?.nickname
+    if (nicknameChanged) {
+      if (trimmedNickname.length < 2 || trimmedNickname.length > 20) {
+        setSaveError('닉네임은 2~20자로 입력해주세요'); return
+      }
+      if (!nicknameChangeAllowed) {
+        setSaveError(`${daysUntilChange}일 후 변경 가능합니다`); return
+      }
+    }
     setSaving(true)
     try {
       const payload: any = {}
       if (username !== user?.username) payload.username = username
+      if (nicknameChanged) payload.nickname = trimmedNickname
       if (email !== user?.email) payload.email = email
       if (newPw) { payload.current_password = currentPw; payload.new_password = newPw }
       const updated = await usersApi.updateMe(payload)
       setUser(updated)
+      setNickname(updated.nickname)
       setCurrentPw(''); setNewPw(''); setConfirmPw('')
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 3000)
@@ -143,8 +163,8 @@ export default function MyPage() {
             <User className="w-7 h-7 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{user.username}</h1>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <h1 className="text-xl font-bold text-gray-900">{user.nickname}</h1>
+            <p className="text-sm text-gray-500">@{user.username} · {user.email}</p>
             <div className="flex items-center gap-3 mt-1">
               <span className="flex items-center gap-1 text-xs text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">
                 <Star className="w-3 h-3" />{user.points.toLocaleString()}P
@@ -174,6 +194,25 @@ export default function MyPage() {
         <div className="card p-6 space-y-5">
           <h2 className="font-semibold text-gray-900">회원정보 수정</h2>
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">닉네임</label>
+              <div className="relative">
+                <Smile className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input value={nickname} onChange={e => setNickname(e.target.value)}
+                  disabled={!nicknameChangeAllowed}
+                  maxLength={20}
+                  className="input-field pl-9 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  placeholder="닉네임 (2~20자)" />
+              </div>
+              {nicknameChangeAllowed ? (
+                <p className="text-xs text-gray-400 mt-1">닉네임은 30일에 한 번만 변경할 수 있습니다.</p>
+              ) : (
+                <p className="text-xs text-orange-500 mt-1">
+                  {daysUntilChange}일 후 변경 가능합니다
+                  {nextChangeDate && ` (${format(nextChangeDate, 'yyyy.MM.dd', { locale: ko })} 이후)`}
+                </p>
+              )}
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">아이디</label>
               <div className="relative">
@@ -301,7 +340,7 @@ export default function MyPage() {
                   <User className="w-4 h-4 text-gray-500" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{item.blocked_username}</p>
+                  <p className="font-medium text-gray-900">{item.blocked_nickname ?? item.blocked_username}</p>
                   <p className="text-xs text-gray-400">
                     {format(new Date(item.created_at), 'yyyy.MM.dd', { locale: ko })} 차단
                   </p>
@@ -371,7 +410,7 @@ export default function MyPage() {
                               <div className="flex items-center gap-2">
                                 <ShieldOff className="w-4 h-4 text-red-400 flex-shrink-0" />
                                 <div>
-                                  <p className="text-sm font-medium text-gray-800">{ban.banned_username}</p>
+                                  <p className="text-sm font-medium text-gray-800">{ban.banned_nickname ?? ban.banned_username}</p>
                                   <p className="text-xs text-gray-400">{formatExpiry(ban.expires_at)}</p>
                                 </div>
                               </div>

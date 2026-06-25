@@ -39,9 +39,16 @@ class UserRepository:
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
+    async def get_by_nickname(self, nickname: str) -> User | None:
+        result = await self.db.execute(select(User).where(User.nickname == nickname))
+        return result.scalar_one_or_none()
+
     async def create(self, user_in: UserCreate) -> User:
+        # 가입 시 nickname 미입력 → username 자동 복사. nickname_changed_at=None
+        # (가입 후 첫 변경은 30일 제한 없이 허용).
         user = User(
             username=user_in.username,
+            nickname=user_in.username,
             email=user_in.email,
             hashed_password=get_password_hash(user_in.password),
         )
@@ -84,6 +91,8 @@ class UserRepository:
         username: str | None = None,
         email: str | None = None,
         new_password: str | None = None,
+        nickname: str | None = None,
+        nickname_changed_at: datetime | None = None,
     ) -> User:
         if username:
             user.username = username
@@ -91,6 +100,9 @@ class UserRepository:
             user.email = email
         if new_password:
             user.hashed_password = get_password_hash(new_password)
+        if nickname:
+            user.nickname = nickname
+            user.nickname_changed_at = nickname_changed_at
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
