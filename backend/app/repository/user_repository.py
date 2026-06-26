@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.security.password import get_password_hash, verify_password
+from app.models.comment import Comment
 from app.models.post import Post
 from app.models.user import User, UserRole
+from app.models.vote import PostVote, VoteType
 from app.schemas.user import UserCreate
 
 MAX_FAILED_ATTEMPTS = 5
@@ -39,9 +41,16 @@ class UserRepository:
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
+    async def get_by_nickname(self, nickname: str) -> User | None:
+        result = await self.db.execute(select(User).where(User.nickname == nickname))
+        return result.scalar_one_or_none()
+
     async def create(self, user_in: UserCreate) -> User:
+        # 가입 시 nickname 미입력 → username 자동 복사. nickname_changed_at=None
+        # (가입 후 첫 변경은 30일 제한 없이 허용).
         user = User(
             username=user_in.username,
+            nickname=user_in.username,
             email=user_in.email,
             hashed_password=get_password_hash(user_in.password),
         )
@@ -84,6 +93,8 @@ class UserRepository:
         username: str | None = None,
         email: str | None = None,
         new_password: str | None = None,
+        nickname: str | None = None,
+        nickname_changed_at: datetime | None = None,
     ) -> User:
         if username:
             user.username = username
@@ -91,6 +102,9 @@ class UserRepository:
             user.email = email
         if new_password:
             user.hashed_password = get_password_hash(new_password)
+        if nickname:
+            user.nickname = nickname
+            user.nickname_changed_at = nickname_changed_at
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
@@ -142,6 +156,42 @@ class UserRepository:
         rows = (await self.db.execute(query.offset(offset).limit(size))).scalars().all()
         pages = math.ceil(total / size) if total > 0 else 1
         return list(rows), total, pages
+
+    async def get_my_stats(self, user_id: uuid.UUID) -> dict:
+        post_count = (
+            await self.db.execute(
+                select(func.count()).where(
+                    Post.user_id == user_id,
+                    Post.is_deleted == False,  # noqa: E712
+                )
+            )
+        ).scalar_one()
+        comment_count = (
+            await self.db.execute(
+                select(func.count()).where(
+                    Comment.user_id == user_id,
+                    Comment.is_deleted == False,  # noqa: E712
+                )
+            )
+        ).scalar_one()
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_votes = (
+            await self.db.execute(
+                select(func.count(PostVote.id))
+                .join(Post, PostVote.post_id == Post.id)
+                .where(
+                    Post.user_id == user_id,
+                    Post.is_deleted == False,  # noqa: E712
+                    PostVote.vote_type == VoteType.UP,
+                    PostVote.created_at >= today_start,
+                )
+            )
+        ).scalar_one()
+        return {
+            "post_count": post_count,
+            "comment_count": comment_count,
+            "today_votes_received": today_votes,
+        }
 
 
 # ── 의존성 팩토리 ─────────────────────────────────────────

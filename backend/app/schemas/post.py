@@ -36,6 +36,7 @@ class PostResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     author: str
+    author_nickname: str | None = None
     author_points: int = 0
     author_role: str = "USER"
     author_is_mod: bool = False
@@ -59,6 +60,7 @@ class PostListItem(BaseModel):
     category: CategoryResponse | None = None
     created_at: datetime
     author: str
+    author_nickname: str | None = None
     author_points: int = 0
     author_role: str = "USER"
     author_is_mod: bool = False

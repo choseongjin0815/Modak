@@ -53,6 +53,7 @@ def build_post_response(
         created_at=post.created_at,
         updated_at=post.updated_at,
         author=post.user.username,
+        author_nickname=post.user.nickname,
         author_points=post.user.points,
         author_role=post.user.role.value,
         author_is_mod=author_is_mod,

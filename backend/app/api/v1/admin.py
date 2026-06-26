@@ -109,6 +109,7 @@ async def list_reports(
             "id": str(r.id),
             "reporter_id": str(r.reporter_id),
             "reporter_username": r.reporter.username if r.reporter else "탈퇴한 사용자",
+            "reporter_nickname": r.reporter.nickname if r.reporter else "탈퇴한 사용자",
             "target_type": r.target_type,
             "target_id": str(r.target_id),
             "reason": r.reason,
@@ -138,6 +139,7 @@ async def list_moderators(
         {
             "user_id": str(row.CategoryModerator.user_id),
             "username": row.username,
+            "nickname": row.nickname,
             "category_id": row.CategoryModerator.category_id,
             "category_name": row.cat_name,
             "category_slug": row.cat_slug,

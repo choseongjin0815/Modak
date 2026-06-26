@@ -10,15 +10,15 @@ interface PaginationProps {
 }
 
 export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  if (totalPages <= 1) return null
-
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
-
   const [inputValue, setInputValue] = useState(String(currentPage))
 
   useEffect(() => {
     setInputValue(String(currentPage))
   }, [currentPage])
+
+  if (totalPages <= 1) return null
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
 
   const handlePageJump = () => {
     const page = Number(inputValue)

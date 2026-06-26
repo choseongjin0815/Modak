@@ -573,6 +573,7 @@ async def seed() -> None:
         admin_pw = get_password_hash("Admin1234!")
         admin = User(
             username="admin",
+            nickname="모닥지기",
             email="admin@modak.dev",
             hashed_password=admin_pw,
             is_active=True,
@@ -638,6 +639,7 @@ async def seed() -> None:
             else:
                 user = User(
                     username=username,
+                    nickname=username,
                     email=f"{username}@board.dev",
                     hashed_password=hashed_pw,
                     is_active=True,

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.security.dependencies import get_current_active_user
@@ -5,9 +7,21 @@ from app.security.password import verify_password
 from app.models.user import User
 from app.repository.category_moderator_repository import CategoryModeratorRepository, get_category_mod_repo
 from app.repository.user_repository import UserRepository, get_user_repo
-from app.schemas.user import UserDeleteRequest, UserResponse, UserUpdate
+from app.schemas.user import UserDeleteRequest, UserResponse, UserStatsResponse, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+NICKNAME_CHANGE_INTERVAL = timedelta(days=30)
+NICKNAME_MIN_LEN = 2
+NICKNAME_MAX_LEN = 20
+
+
+@router.get("/me/stats", response_model=UserStatsResponse)
+async def get_my_stats(
+    current_user: User = Depends(get_current_active_user),
+    user_repo: UserRepository = Depends(get_user_repo),
+):
+    return await user_repo.get_my_stats(current_user.id)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -42,11 +56,42 @@ async def update_my_profile(
         if existing:
             raise HTTPException(status_code=409, detail="이미 사용 중인 이메일입니다")
 
+    # 닉네임 변경 처리 (모든 조회/검증을 update_profile 의 commit 이전에 수행 — MissingGreenlet 회피)
+    nickname: str | None = None
+    nickname_changed_at: datetime | None = None
+    if user_in.nickname is not None and user_in.nickname != current_user.nickname:
+        new_nickname = user_in.nickname.strip()
+
+        # 형식 검증
+        if not (NICKNAME_MIN_LEN <= len(new_nickname) <= NICKNAME_MAX_LEN):
+            raise HTTPException(status_code=400, detail="닉네임은 2~20자로 입력해주세요")
+
+        # 30일 제한 (nickname_changed_at IS NULL = 가입 후 미변경 → 제한 없이 허용)
+        now = datetime.now(timezone.utc)
+        if current_user.nickname_changed_at is not None:
+            next_available = current_user.nickname_changed_at + NICKNAME_CHANGE_INTERVAL
+            if now < next_available:
+                date_str = next_available.strftime("%Y년 %m월 %d일")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"닉네임은 30일에 한 번만 변경할 수 있습니다. {date_str} 이후 변경 가능합니다.",
+                )
+
+        # 중복 체크 (본인 제외)
+        existing = await user_repo.get_by_nickname(new_nickname)
+        if existing and existing.id != current_user.id:
+            raise HTTPException(status_code=409, detail="이미 사용 중인 닉네임입니다")
+
+        nickname = new_nickname
+        nickname_changed_at = now
+
     return await user_repo.update_profile(
         current_user,
         username=user_in.username,
         email=user_in.email,
         new_password=user_in.new_password,
+        nickname=nickname,
+        nickname_changed_at=nickname_changed_at,
     )
 
 

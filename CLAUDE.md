@@ -17,7 +17,7 @@ cd backend
 .\venv\Scripts\Activate.ps1            # venv 활성화
 cp .env.example .env                   # 최초 1회 — DATABASE_URL, SECRET_KEY, OPENAI_API_KEY
 alembic upgrade head                   # 마이그레이션 (생성: alembic revision --autogenerate -m "설명")
-uvicorn app.main:app --reload --port 8000   # API 문서: http://localhost:8000/docs
+uvicorn app.main:app --reload --port 8001   # API 문서: http://localhost:8001/docs
 $env:PYTHONIOENCODING="utf-8"; python seed.py   # 시드 (DB 초기화 후 재삽입)
 ```
 
@@ -25,7 +25,7 @@ $env:PYTHONIOENCODING="utf-8"; python seed.py   # 시드 (DB 초기화 후 재�
 ```bash
 cd frontend
 npm install
-npm run dev        # http://localhost:3000
+npm run dev -- --port 3001   # http://localhost:3001
 npm run build
 npm run lint
 npx tsc --noEmit   # 타입 체크
@@ -60,6 +60,9 @@ npx tsc --noEmit   # 타입 체크
 | 2026-06-18 | 초기 구성 (planner·backend·frontend·qa 4인 팀 + 5스킬) | 전체 | - |
 | 2026-06-24 | 기동 전 `pip install -r requirements.txt` 의존성 동기화 단계 추가 | skills/backend-feature | venv slowapi 미설치로 uvicorn 기동 반복 실패 |
 | 2026-06-24 | `_workspace/` → `_workspace*/`로 gitignore 확장 | .gitignore | 보관본(`_workspace_prev` 등)도 추적 제외 |
+| 2026-06-25 | `_workspace/current` + `history/NN_<기능명>/` 구조로 개편 | _workspace | _workspace_prev* 무한 누적 안티패턴 해소 |
+| 2026-06-25 | 완료 후 절차 추가 (alembic·seed·서버기동·CLAUDE.md 최신화) | skills/backend-feature, skills/modak-feature-orchestrator | 기능 완료 후 반영 누락 방지 |
+| 2026-06-25 | 백엔드 포트 8001, 프론트 포트 3001로 확정 | CLAUDE.md Commands | 로컬 실행 포트 실제값 반영 |
 
 ## 핵심 규칙 (버그 예방 — 위반 시 작업 낭비)
 
@@ -73,3 +76,7 @@ npx tsc --noEmit   # 타입 체크
 - **Navbar:** 드롭다운 `onBlur` 금지(click-outside 사용). `NAV_BREAKPOINTS` 클래스는 Tailwind JIT용 정적 문자열로 선언.
 - **파일 다운로드:** `${NEXT_PUBLIC_API_URL}/files/${file.id}` 직접 생성 (헬퍼 만들지 말 것).
 - **auth-change 이벤트:** `setToken()`/`removeToken()`이 dispatch → Navbar·NotificationBell·VisitorCount가 구독해 즉시 갱신.
+- **HTTP 400 vs 401:** 비밀번호 오류·30일 변경 제한 등 "로그인 후 사용자 실수" 에러는 반드시 **400** 반환. 401을 쓰면 axios 인터셉터가 `/login`으로 강제 리다이렉트해 모달/인라인 에러 표시가 불가능.
+- **닉네임 vs username 분리:** `nickname`은 표시용(마이페이지 수정 가능), `username`은 인증 식별자(JWT sub, 변경 불가). 응답 shape에서 display는 `author_nickname`/`sender_nickname` 등, 식별은 `author`/`sender`(=username) 유지. 프론트 display: `nickname ?? username` fallback.
+- **DELETE + JSON body:** axios에서 `apiClient.delete(url, { data: {...} })` 패턴 사용 (body를 `data` 키에 넣음). `moderationApi.unban`, `usersApi.deleteMe` 동일 패턴 — 검증된 방식.
+- **사용자 통계 확장:** 새 사용자 통계는 `GET /api/v1/users/me/stats` 응답(`UserStatsResponse`)에 필드 추가로 확장. 별도 stats 엔드포인트 신설 지양.

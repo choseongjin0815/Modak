@@ -44,7 +44,7 @@ export default function PostCard({ post }: PostCardProps) {
                 <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <LevelBadge points={post.author_points} />
                 <AuthorBadge role={post.author_role} isMod={post.author_is_mod} />
-                {post.author}
+                {post.author_nickname ?? post.author}
               </span>
               <span>{formattedDate}</span>
             </div>

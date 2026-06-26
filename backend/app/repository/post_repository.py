@@ -77,6 +77,7 @@ class PostRepository:
             select(
                 Post,
                 User.username,
+                User.nickname,
                 User.points,
                 User.role.label("user_role"),
                 func.coalesce(comment_count_sq.c.comment_count, 0).label("comment_count"),
@@ -135,6 +136,7 @@ class PostRepository:
                 ) if row.cat_id else None,
                 created_at=row.Post.created_at,
                 author=row.username,
+                author_nickname=row.nickname,
                 author_points=row.points,
                 author_role=row.user_role.value,
                 author_is_mod=row.is_mod,
@@ -196,6 +198,7 @@ class PostRepository:
             select(
                 Post,
                 User.username,
+                User.nickname,
                 func.coalesce(comment_count_sq.c.comment_count, 0).label("comment_count"),
                 Category.slug.label("cat_slug"),
                 Category.name.label("cat_name"),
@@ -215,6 +218,7 @@ class PostRepository:
                 "id": str(row.Post.id),
                 "title": row.Post.title,
                 "author": row.username,
+                "author_nickname": row.nickname,
                 "category": {"slug": row.cat_slug, "name": row.cat_name} if row.cat_slug else None,
                 "view_count": row.Post.view_count,
                 "up_votes": row.Post.up_votes,

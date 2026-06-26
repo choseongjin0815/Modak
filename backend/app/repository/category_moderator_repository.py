@@ -67,6 +67,7 @@ class CategoryModeratorRepository:
             select(
                 CategoryModerator,
                 User.username,
+                User.nickname,
                 Category.name.label("cat_name"),
                 Category.slug.label("cat_slug"),
             )

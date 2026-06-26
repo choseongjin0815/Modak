@@ -84,7 +84,7 @@ export default function AdminReportsPage() {
                 </div>
                 <p className="text-sm text-gray-700 font-medium">{report.reason}</p>
                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                  <span>신고자: {report.reporter_username}</span>
+                  <span>신고자: {report.reporter_nickname ?? report.reporter_username}</span>
                   <span>{format(new Date(report.created_at), 'yy.MM.dd HH:mm', { locale: ko })}</span>
                 </div>
                 {report.target_type === 'POST' && (

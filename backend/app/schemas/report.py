@@ -28,6 +28,7 @@ class ReportAdminResponse(BaseModel):
     id: UUID
     reporter_id: UUID
     reporter_username: str
+    reporter_nickname: str
     target_type: ReportTargetType
     target_id: UUID
     reason: str

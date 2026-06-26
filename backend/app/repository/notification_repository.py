@@ -6,6 +6,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import Notification
+from app.models.user import User
 from app.services.sse_manager import sse_manager
 
 logger = logging.getLogger(__name__)
@@ -22,15 +23,23 @@ class NotificationRepository:
         actor: str,
         content: str,
         link: str | None = None,
+        actor_nickname: str | None = None,
     ) -> Notification:
         noti = Notification(user_id=user_id, type=type, actor=actor, content=content, link=link)
         self.db.add(noti)
         await self.db.commit()
         await self.db.refresh(noti)
+        # actor_nickname 미전달 시 actor(username)로 조회. SSE push 전(commit 이후) 별도 쿼리.
+        if actor_nickname is None:
+            result = await self.db.execute(
+                select(User.nickname).where(User.username == actor)
+            )
+            actor_nickname = result.scalar_one_or_none() or actor
         await sse_manager.push(user_id, {
             "id": str(noti.id),
             "type": noti.type,
             "actor": noti.actor,
+            "actor_nickname": actor_nickname,
             "content": noti.content,
             "link": noti.link,
             "is_read": False,
@@ -40,14 +49,20 @@ class NotificationRepository:
         return noti
 
     async def get_list(self, user_id: uuid.UUID, page: int = 1, size: int = 20):
+        # actor(username) → User.nickname 조회. 닉네임 변경이 과거 알림에도 즉시 반영.
         query = (
-            select(Notification)
+            select(Notification, User.nickname.label("actor_nickname"))
+            .outerjoin(User, Notification.actor == User.username)
             .where(Notification.user_id == user_id)
             .order_by(Notification.created_at.desc())
         )
-        total = (await self.db.execute(select(func.count()).select_from(query.subquery()))).scalar_one()
+        count_query = (
+            select(Notification.id)
+            .where(Notification.user_id == user_id)
+        )
+        total = (await self.db.execute(select(func.count()).select_from(count_query.subquery()))).scalar_one()
         offset = (page - 1) * size
-        rows = (await self.db.execute(query.offset(offset).limit(size))).scalars().all()
+        rows = (await self.db.execute(query.offset(offset).limit(size))).all()
         return list(rows), total, math.ceil(total / size) if total > 0 else 1
 
     async def get_unread_count(self, user_id: uuid.UUID) -> int:

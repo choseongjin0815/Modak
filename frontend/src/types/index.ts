@@ -11,6 +11,8 @@ export type UserRole = 'USER' | 'ADMIN'
 export interface User {
   id: string
   username: string
+  nickname: string
+  nickname_changed_at: string | null
   email: string
   is_active: boolean
   role: UserRole
@@ -21,6 +23,7 @@ export interface User {
 export interface UserAdminItem {
   id: string
   username: string
+  nickname: string
   email: string
   is_active: boolean
   role: UserRole
@@ -35,6 +38,7 @@ export interface Report {
   id: string
   reporter_id: string
   reporter_username: string
+  reporter_nickname: string
   target_type: ReportTargetType
   target_id: string
   reason: string
@@ -47,6 +51,7 @@ export interface BlacklistItem {
   id: string
   blocked_id: string
   blocked_username: string
+  blocked_nickname: string
   created_at: string
 }
 
@@ -62,9 +67,12 @@ export interface Message {
   id: string
   sender_id: string
   sender_username: string
+  sender_nickname: string
   receiver_id: string
   receiver_username: string
+  receiver_nickname: string
   other_username: string
+  other_nickname: string
   content: string
   is_read: boolean
   created_at: string
@@ -74,6 +82,7 @@ export interface Notification {
   id: string
   type: 'post_comment' | 'comment_reply' | 'new_message'
   actor: string
+  actor_nickname: string
   content: string
   link: string | null
   is_read: boolean
@@ -90,6 +99,7 @@ export interface ModeratedCategory {
 export interface ModeratorBanInfo {
   banned_user_id: string
   banned_username: string
+  banned_nickname: string
   expires_at: string | null
   created_at: string
 }
@@ -108,6 +118,7 @@ export interface Post {
   created_at: string
   updated_at: string
   author: string
+  author_nickname: string
   author_points: number
   author_role: string
   author_is_mod: boolean
@@ -130,6 +141,7 @@ export interface PostListItem {
   category: CategoryItem | null
   created_at: string
   author: string
+  author_nickname: string
   author_points: number
   author_role: string
   author_is_mod: boolean
@@ -154,6 +166,7 @@ export interface Comment {
   created_at: string
   updated_at: string
   author: string
+  author_nickname: string
   author_points: number
   author_role: string
   author_is_mod: boolean
@@ -244,6 +257,12 @@ export interface NoticeUpdate {
   title?: string
   content?: string
   is_pinned?: boolean
+}
+
+export interface UserStats {
+  post_count: number
+  comment_count: number
+  today_votes_received: number
 }
 
 export type ImageSize = '1024x1024' | '1024x1536' | '1536x1024'

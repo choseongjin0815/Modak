@@ -30,6 +30,7 @@ def build_comment_response(
         created_at=comment.created_at,
         updated_at=comment.updated_at,
         author=comment.user.username if not comment.deleted_by_admin else "삭제됨",
+        author_nickname=comment.user.nickname if not comment.deleted_by_admin else "삭제됨",
         author_points=comment.user.points if not comment.deleted_by_admin else 0,
         author_role=comment.user.role.value if not comment.deleted_by_admin else "USER",
         author_is_mod=author_is_mod and not comment.deleted_by_admin,
@@ -81,8 +82,9 @@ async def create_comment(
     point_svc = PointService(point_repo)
     await point_svc.award_comment_created(current_user.id, post_id)
 
-    # 알림 발송
+    # 알림 발송 (actor=username 식별용, content 표시 문구는 nickname)
     actor = current_user.username
+    actor_display = current_user.nickname
     post_link = f"/posts/{post_id}"
     notified: set = set()
 
@@ -93,7 +95,7 @@ async def create_comment(
                 user_id=parent.user_id,
                 type="comment_reply",
                 actor=actor,
-                content=f"{actor}님이 내 댓글에 답글을 달았습니다.",
+                content=f"{actor_display}님이 내 댓글에 답글을 달았습니다.",
                 link=post_link,
             )
             notified.add(parent.user_id)
@@ -104,7 +106,7 @@ async def create_comment(
             user_id=post.user_id,
             type="post_comment",
             actor=actor,
-            content=f"{actor}님이 내 게시글에 댓글을 달았습니다.",
+            content=f"{actor_display}님이 내 게시글에 댓글을 달았습니다.",
             link=post_link,
         )
 

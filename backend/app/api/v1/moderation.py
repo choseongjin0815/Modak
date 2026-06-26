@@ -90,6 +90,7 @@ async def list_bans(
         {
             "banned_user_id": str(row.ModeratorBan.banned_user_id),
             "banned_username": row.banned_username,
+            "banned_nickname": row.banned_nickname,
             "expires_at": row.ModeratorBan.expires_at.isoformat() if row.ModeratorBan.expires_at else None,
             "created_at": row.ModeratorBan.created_at.isoformat(),
         }

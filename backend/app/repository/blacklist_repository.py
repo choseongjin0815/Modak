@@ -48,7 +48,7 @@ class BlacklistRepository:
 
     async def get_my_blacklist(self, blocker_id: uuid.UUID) -> list[dict]:
         result = await self.db.execute(
-            select(Blacklist, User.username)
+            select(Blacklist, User.username, User.nickname)
             .join(User, Blacklist.blocked_id == User.id)
             .where(Blacklist.blocker_id == blocker_id)
             .order_by(Blacklist.created_at.desc())
@@ -59,6 +59,7 @@ class BlacklistRepository:
                 "id": str(row.Blacklist.id),
                 "blocked_id": str(row.Blacklist.blocked_id),
                 "blocked_username": row.username,
+                "blocked_nickname": row.nickname,
                 "created_at": row.Blacklist.created_at.isoformat(),
             }
             for row in rows

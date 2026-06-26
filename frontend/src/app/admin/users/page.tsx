@@ -73,6 +73,7 @@ export default function AdminUsersPage() {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">아이디</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">닉네임</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">이메일</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">역할</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">상태</th>
@@ -82,10 +83,11 @@ export default function AdminUsersPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={6} className="py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" /></td></tr>
+              <tr><td colSpan={7} className="py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" /></td></tr>
             ) : users.map(user => (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-900">{user.username}</td>
+                <td className="px-4 py-3 text-gray-700 hidden lg:table-cell">{user.nickname ?? user.username}</td>
                 <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{user.email}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${

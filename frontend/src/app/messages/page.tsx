@@ -20,6 +20,8 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState<Message | null>(null)
   const [showCompose, setShowCompose] = useState(false)
+  // 답장 시 수신자(아이디=식별자)를 사전 설정. 일반 쓰기는 빈 값.
+  const [replyTo, setReplyTo] = useState('')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -69,13 +71,14 @@ export default function MessagesPage() {
         <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <Mail className="w-5 h-5 text-purple-500" />쪽지함
         </h1>
-        <button onClick={() => setShowCompose(true)} className="btn-primary text-sm px-3 py-2">
+        <button onClick={() => { setReplyTo(''); setShowCompose(true) }} className="btn-primary text-sm px-3 py-2">
           <PenSquare className="w-4 h-4" />쪽지 쓰기
         </button>
       </div>
 
       {showCompose && (
         <MessageModal
+          defaultReceiver={replyTo}
           onClose={() => setShowCompose(false)}
           onSent={() => tab === 'sent' && loadMessages('sent', 1)}
         />
@@ -108,7 +111,7 @@ export default function MessagesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className={`text-sm font-medium truncate ${tab === 'inbox' && !msg.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
-                        {tab === 'inbox' ? msg.sender_username : msg.receiver_username}
+                        {tab === 'inbox' ? (msg.sender_nickname ?? msg.sender_username) : (msg.receiver_nickname ?? msg.receiver_username)}
                       </span>
                       <span className="text-xs text-gray-400 flex-shrink-0">
                         {format(new Date(msg.created_at), 'MM/dd HH:mm', { locale: ko })}
@@ -142,7 +145,7 @@ export default function MessagesPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-400">
-                    {tab === 'inbox' ? `보낸 사람: ${selected.sender_username}` : `받는 사람: ${selected.receiver_username}`}
+                    {tab === 'inbox' ? `보낸 사람: ${selected.sender_nickname ?? selected.sender_username}` : `받는 사람: ${selected.receiver_nickname ?? selected.receiver_username}`}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {format(new Date(selected.created_at), 'yyyy.MM.dd HH:mm', { locale: ko })}
@@ -151,7 +154,7 @@ export default function MessagesPage() {
                 <div className="flex gap-1">
                   {tab === 'inbox' && (
                     <button
-                      onClick={() => setShowCompose(true)}
+                      onClick={() => { setReplyTo(selected.sender_username); setShowCompose(true) }}
                       className="flex items-center gap-1 text-xs px-2.5 py-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" />답장
@@ -170,11 +173,11 @@ export default function MessagesPage() {
               </div>
               {tab === 'inbox' && (
                 <button
-                  onClick={() => { setShowCompose(true) }}
+                  onClick={() => { setReplyTo(selected.sender_username); setShowCompose(true) }}
                   className="w-full btn-secondary text-sm"
                 >
                   <Send className="w-4 h-4" />
-                  {selected.sender_username}님에게 답장
+                  {selected.sender_nickname ?? selected.sender_username}님에게 답장
                 </button>
               )}
             </div>
